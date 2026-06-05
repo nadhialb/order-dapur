@@ -1044,23 +1044,147 @@ async function delH(id,label){
 // SETTINGS
 // ═══════════════════════════════════════════════════
 async function renderSettings(){
-  const c=document.getElementById('settings-c');if(!c)return;
-  let katRows=[];try{katRows=await sbG('custom_kategori','order=bahan_name.asc');}catch(e){}
-  const dapurNames=JSON.parse(localStorage.getItem('kok_dapur_names')||'{}');
+  const c=document.getElementById('settings-c');
+  if(!c)return;
+  let katRows=[];
+  try{katRows=await sbG('custom_kategori','order=bahan_name.asc');}
+  catch(e){}
+  const dn=JSON.parse(localStorage.getItem('kok_dapur_names')||'{}');
   const notifOn=localStorage.getItem('kok_notif')==='on';
-  const notifSupported='Notification' in window;
-  const notifGranted=notifSupported&&Notification.permission==='granted';
+  const notifOK=('Notification' in window);
+  const notifGiven=notifOK&&(Notification.permission==='granted');
+  const isDark=localStorage.getItem('kok_theme')!=='light';
+  let h='';
+  h+='<div class="settings-section">';
+  h+='<div class="settings-title">Tampilan</div>';
+  h+='<div class="theme-options">';
+  h+='<button class="theme-opt '+(isDark?'active':'')+'"';
+  h+=' onclick="applyThemeMode(\'dark\');renderSettings()">';
+  h+='🌙 Dark</button>';
+  h+='<button class="theme-opt '+(!isDark?'active':'')+'"';
+  h+=' onclick="applyThemeMode(\'light\');renderSettings()">';
+  h+='☀️ Light</button>';
+  h+='</div></div>';
+  h+='<div class="settings-section">';
+  h+='<div class="settings-title">Notifikasi</div>';
+  h+='<p style="font-size:11px;color:var(--text3);margin-bottom:.5rem">';
+  h+=notifOK?'Aktifkan untuk reminder H-1 saat buka app.':'Tidak support.';
+  h+='</p>';
+  if(notifOK){
+    h+='<div class="notif-toggle">';
+    h+='<span class="notif-toggle-label">';
+    h+=notifGiven?'Diizinkan browser':'Belum diizinkan';
+    h+='</span>';
+    h+='<button class="btn-accent" style="font-size:11px;padding:.35rem .7rem"';
+    h+=' onclick="requestNotifPermission()">';
+    h+=(notifGiven&&notifOn)?'✓ Aktif':'Aktifkan';
+    h+='</button></div>';
+  }
+  h+='</div>';
+  h+='<div class="settings-section">';
+  h+='<div class="settings-title">Nama Dapur</div>';
+  h+='<p style="font-size:11px;color:var(--text3);margin-bottom:.6rem">';
+  h+='Klik nama, klik di luar untuk simpan.';
+  h+=' Atau klik ✏️ di kartu dashboard.</p>';
+  h+='<div id="dapur-names-list">';
+  DAPURS_DEFAULT.forEach(function(d){
+    h+='<div class="dapur-name-row">';
+    h+='<span class="dapur-name-icon">'+d.icon+'</span>';
+    const val=escH(dn[d.id]||d.name);
+    const ph=escH(d.name);
+    h+='<input type="text" value="'+val+'"';
+    h+=' placeholder="'+ph+'"';
+    h+=' onblur="saveDapurNameUI(\''+d.id+'\',this.value)">';
+    h+='</div>';
+  });
+  h+='</div></div>';
+  h+='<div class="settings-section">';
+  h+='<div class="settings-title">Sumber Keterangan</div>';
+  h+='<div id="sumber-list"></div>';
+  h+='<button class="btn-add" onclick="addSumber()">+ Tambah sumber</button>';
+  h+='</div>';
+  h+='<div class="settings-section">';
+  h+='<div class="settings-title">Kategori Custom ('+katRows.length+')</div>';
+  h+='<div id="custom-kat-list">';
+  if(katRows.length){
+    katRows.forEach(function(r){
+      h+='<div class="custom-kat-row">';
+      h+='<span class="custom-kat-name">'+escH(r.bahan_name)+'</span>';
+      const badge=(CC[r.kategori]?.e||'')+' '+(CC[r.kategori]?.l||r.kategori);
+      h+='<span class="custom-kat-badge">'+badge+'</span>';
+      h+='<button class="btn-x" onclick="resetKat(\'';
+      h+=escH(r.bahan_key)+'\',\''+escH(r.bahan_name)+'\')">✕</button>';
+      h+='</div>';
+    });
+  }else{
+    h+='<p class="empty" style="padding:.5rem 0;font-size:12px">Belum ada.</p>';
+  }
+  h+='</div></div>';
+  c.innerHTML=h;
+  renderSumberList();
+}
 
-  c.innerHTML=`
-    <div class="settings-section">
-      <div class="settings-title">Tampilan</div>
-      <div class="theme-options">
-        <button class="theme-opt ${localStorage.getItem('kok_theme')!=='light'?'active':''}" onclick="applyThemeMode('dark');renderSettings()">🌙 Dark</button>
-        <button class="theme-opt ${localStorage.getItem('kok_theme')==='light'?'active':''}" onclick="applyThemeMode('light');renderSettings()">☀️ Light</button>
-      </div>
-    </div>
+function saveDapurNameUI(id,name){
+  const fallback=DAPURS_DEFAULT.find(d=>d.id===id)?.name||id;
+  saveDapurName(id,name.trim()||fallback);
+  if(curDapurId===id){
+    const icon=DAPURS.find(d=>d.id===id)?.icon||'';
+    document.getElementById('dapur-title').textContent=icon+' '+(name.trim()||id);
+  }
+  toast('✓ Nama dapur disimpan');
+}
 
-    <div class="settings-section">
-      <div class="settings-title">Notifikasi</div>
-      <p style="font-size:11px;color:var(--text3);margin-bottom:.5rem">
-        ${notifSupported?'Aktifkan untuk mendapat peringatan H-1 saat membuka aplikasi.':'Browser tidak mendukung n
+function renderSumberList(){
+  const c=document.getElementById('sumber-list');
+  if(!c)return;
+  c.innerHTML='';
+  SUMBER.forEach((s,i)=>{
+    const row=document.createElement('div');
+    row.className='sumber-row';
+    row.innerHTML='<input type="text" value="'+escH(s)+'"'
+      +' placeholder="Nama sumber"'
+      +' onblur="upSumber('+i+',this.value)">'
+      +'<button class="btn-x" onclick="delSumber('+i+')">✕</button>';
+    c.appendChild(row);
+  });
+}
+function upSumber(i,v){SUMBER[i]=v;dbSaveSettings();}
+function delSumber(i){
+  if(SUMBER.length<=1){toast('Minimal 1.');return;}
+  SUMBER.splice(i,1);dbSaveSettings();renderSettings();
+}
+function addSumber(){
+  SUMBER.push('');dbSaveSettings();renderSettings();
+  setTimeout(()=>{
+    const inputs=document.querySelectorAll('#sumber-list input');
+    if(inputs.length)inputs[inputs.length-1].focus();
+  },50);
+}
+async function resetKat(key,name){
+  if(!confirm('Reset "'+name+'"?'))return;
+  await dbDelCustomKat(key);
+  toast('↩ Reset');renderSettings();refreshActive();
+}
+
+// ═══════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════
+async function init(){
+  loadTheme();
+  try{STOK_KOPERASI=JSON.parse(localStorage.getItem('kok_koperasi_stok')||'[]');}
+  catch(e){}
+  await Promise.all([dbLoadCustomKat(),dbLoadSettings(),dbLoadKoperasiStok()]);
+  const hash=window.location.hash.slice(1);
+  const dapur=DAPURS.find(d=>d.id===hash);
+  if(dapur)openDapur(dapur.id);
+  else{showPage('dashboard');renderDashboard();}
+}
+
+window.addEventListener('hashchange',()=>{
+  const hash=window.location.hash.slice(1);
+  const dapur=DAPURS.find(d=>d.id===hash);
+  if(dapur)openDapur(dapur.id);
+  else{showPage('dashboard');renderDashboard();}
+});
+
+init();
