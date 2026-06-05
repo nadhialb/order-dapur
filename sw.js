@@ -1,5 +1,5 @@
 // Service Worker — Dapur Order (Offline Mode)
-const CACHE_NAME = 'dapur-order-v3';
+const CACHE_NAME = 'dapur-order-v9';
 const ASSETS = [
   '/',
   '/index.html',

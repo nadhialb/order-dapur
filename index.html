@@ -14,7 +14,7 @@
 <div id="loading-bar"></div>
 <div class="toast" id="toast"></div>
 
-<!-- ══ PAGE: DASHBOARD ══ -->
+<!-- PAGE: DASHBOARD -->
 <div id="page-dashboard" class="page active">
   <div class="topbar">
     <div class="topbar-title">🍽️ Dapur Order</div>
@@ -33,10 +33,8 @@
   </div>
 </div>
 
-<!-- ══ PAGE: DETAIL DAPUR ══ -->
+<!-- PAGE: DETAIL DAPUR -->
 <div id="page-dapur" class="page">
-
-  <!-- Sticky wrapper: topbar + tab-bar jadi satu unit sticky -->
   <div class="dapur-sticky" id="dapur-sticky">
     <div class="dapur-topbar" id="dapur-topbar">
       <button class="back-btn" onclick="goBack()">‹</button>
@@ -64,14 +62,10 @@
       <button class="tb" data-tab="histori">⏱ Histori</button>
     </div>
   </div>
-
-  <!-- Tab panels -->
   <div class="tab-panels" id="tab-panels">
-
     <div class="tab-panel active" id="panel-ringkasan">
       <div id="ringkasan-c"></div>
     </div>
-
     <div class="tab-panel" id="panel-input">
       <div class="import-bar">
         <div class="import-left">
@@ -86,12 +80,10 @@
         <button class="btn-success" id="btn-sv" onclick="saveW()">◈ Simpan ke Database</button>
       </div>
     </div>
-
     <div class="tab-panel" id="panel-pesan">
       <div class="panel-head"><span class="panel-title">Pesan Order</span><span class="muted">Klik kotak untuk copy</span></div>
       <div id="order-h-c"></div>
     </div>
-
     <div class="tab-panel" id="panel-checklist">
       <div class="panel-head">
         <span class="panel-title">Checklist Order</span>
@@ -100,7 +92,6 @@
       <div class="prog-wrap"><div class="prog-bar"><div class="prog-fill" id="cl-prog" style="width:0%"></div></div></div>
       <div id="cl-c"></div>
     </div>
-
     <div class="tab-panel" id="panel-rekap">
       <div class="panel-head"><span class="panel-title">Rekap Bahan</span><span class="chip" id="rekap-c">—</span></div>
       <div class="export-bar">
@@ -119,12 +110,10 @@
         </table>
       </div>
     </div>
-
     <div class="tab-panel" id="panel-stok">
       <div class="panel-head"><span class="panel-title">Stok Sisa</span></div>
       <div id="stok-c"></div>
     </div>
-
     <div class="tab-panel" id="panel-histori">
       <div class="panel-head">
         <span class="panel-title">Histori</span>
@@ -132,9 +121,48 @@
       </div>
       <div id="hist-c"><p class="empty">Belum ada histori.</p></div>
     </div>
-
   </div>
-</div><!-- /page-dapur -->
+</div>
 
-<!-- ══ PAGE: SETTINGS ══ -->
-<div id="page-settin
+<!-- PAGE: SETTINGS -->
+<div id="page-settings" class="page">
+  <div class="topbar">
+    <button class="back-btn-light" onclick="goBack()">‹</button>
+    <div class="topbar-title">Pengaturan</div>
+  </div>
+  <div class="page-body" id="settings-c"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="app.js"></script>
+<script>
+// Hapus semua service worker lama yang mungkin cache file rusak
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(function(regs) {
+    regs.forEach(function(reg) { reg.unregister(); });
+  }).then(function() {
+    // Register ulang setelah semua lama dihapus
+    navigator.serviceWorker.register('/sw.js').catch(function(){});
+  });
+}
+// Online/Offline indicator
+function updateOnlineStatus() {
+  var existing = document.getElementById('offline-bar');
+  if (!navigator.onLine) {
+    if (!existing) {
+      var bar = document.createElement('div');
+      bar.id = 'offline-bar';
+      bar.className = 'offline-bar';
+      bar.textContent = 'Tidak ada koneksi internet — data dari cache lokal';
+      document.body.prepend(bar);
+    }
+  } else {
+    if (existing) existing.remove();
+  }
+}
+window.addEventListener('online', updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+updateOnlineStatus();
+</script>
+</body>
+</html>
