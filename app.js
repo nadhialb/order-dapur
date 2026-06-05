@@ -1178,11 +1178,8 @@ async function init(){
   const dapur=DAPURS.find(d=>d.id===hash);
   if(dapur)openDapur(dapur.id);
   else{showPage('dashboard');renderDashboard();}
-  // Sync DB di background — selesai kapanpun, re-render
-  try{
-    await Promise.all([dbLoadCustomKat(),dbLoadSettings(),dbLoadKoperasiStok()]);
-    if(!window.location.hash.slice(1))renderDashboard();
-  }catch(e){}
+  // Sync DB di background — TIDAK re-render supaya tidak hapus kartu yang sudah ada
+  Promise.all([dbLoadCustomKat(),dbLoadSettings(),dbLoadKoperasiStok()]).catch(()=>{});
 }
 
 window.addEventListener('hashchange',()=>{
