@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#0a0a0a">
+<title>Dapur Order</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="loading-bar"></div>
+<div class="toast" id="toast"></div>
+
+<!-- ══ PAGE: DASHBOARD ══ -->
+<div id="page-dashboard" class="page active">
+  <div class="topbar">
+    <div class="topbar-title">🍽️ Dapur Order</div>
+    <div class="topbar-right">
+      <div class="topbar-date" id="dash-date"></div>
+      <button class="icon-btn" id="theme-toggle" onclick="toggleTheme()" title="Ganti tema">🌙</button>
+      <button class="icon-btn" onclick="goSettings()" title="Pengaturan">⚙️</button>
+    </div>
+  </div>
+  <div class="page-body">
+    <div id="alert-strip"></div>
+    <div class="section-lbl">Dapur Aktif</div>
+    <div id="dapur-cards"></div>
+    <div class="section-lbl" style="margin-top:1.5rem">Stok Sisa</div>
+    <div id="dash-stok-c"></div>
+  </div>
+</div>
+
+<!-- ══ PAGE: DETAIL DAPUR ══ -->
+<div id="page-dapur" class="page">
+
+  <!-- Sticky wrapper: topbar + tab-bar jadi satu unit sticky -->
+  <div class="dapur-sticky" id="dapur-sticky">
+    <div class="dapur-topbar" id="dapur-topbar">
+      <button class="back-btn" onclick="goBack()">‹</button>
+      <div class="dapur-topbar-text">
+        <div id="dapur-title" class="dapur-topbar-title"></div>
+        <div id="dapur-sub"   class="dapur-topbar-sub"></div>
+      </div>
+      <div class="ring-wrap">
+        <svg width="34" height="34" style="transform:rotate(-90deg)">
+          <circle cx="17" cy="17" r="13" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="2.5"/>
+          <circle id="ring-fill" cx="17" cy="17" r="13" fill="none" stroke="#4ade80"
+            stroke-width="2.5" stroke-dasharray="81.7" stroke-dashoffset="81.7"
+            stroke-linecap="round" style="transition:stroke-dashoffset .4s"/>
+        </svg>
+        <span id="ring-pct" class="ring-pct">0%</span>
+      </div>
+    </div>
+    <div class="tab-bar" id="tab-bar">
+      <button class="tb active" data-tab="ringkasan">◎ Ringkasan</button>
+      <button class="tb" data-tab="input">✎ Input</button>
+      <button class="tb" data-tab="pesan">✉ Pesan</button>
+      <button class="tb" data-tab="checklist">☑ Checklist</button>
+      <button class="tb" data-tab="rekap">⊞ Rekap</button>
+      <button class="tb" data-tab="stok">📦 Stok</button>
+      <button class="tb" data-tab="histori">⏱ Histori</button>
+    </div>
+  </div>
+
+  <!-- Tab panels -->
+  <div class="tab-panels" id="tab-panels">
+
+    <div class="tab-panel active" id="panel-ringkasan">
+      <div id="ringkasan-c"></div>
+    </div>
+
+    <div class="tab-panel" id="panel-input">
+      <div class="import-bar">
+        <div class="import-left">
+          <div class="import-title">Import dari Excel</div>
+          <div class="import-sub">Upload .xlsx — terbaca otomatis</div>
+        </div>
+        <button class="btn-accent" onclick="triggerImport()">Pilih File</button>
+        <input type="file" id="xl-input" accept=".xlsx,.xls" style="display:none" onchange="handleImport(event)">
+      </div>
+      <div id="days-c"></div>
+      <div style="margin-top:1rem">
+        <button class="btn-success" id="btn-sv" onclick="saveW()">◈ Simpan ke Database</button>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="panel-pesan">
+      <div class="panel-head"><span class="panel-title">Pesan Order</span><span class="muted">Klik kotak untuk copy</span></div>
+      <div id="order-h-c"></div>
+    </div>
+
+    <div class="tab-panel" id="panel-checklist">
+      <div class="panel-head">
+        <span class="panel-title">Checklist Order</span>
+        <span class="chip" id="cl-lbl">0/0</span>
+      </div>
+      <div class="prog-wrap"><div class="prog-bar"><div class="prog-fill" id="cl-prog" style="width:0%"></div></div></div>
+      <div id="cl-c"></div>
+    </div>
+
+    <div class="tab-panel" id="panel-rekap">
+      <div class="panel-head"><span class="panel-title">Rekap Bahan</span><span class="chip" id="rekap-c">—</span></div>
+      <div class="export-bar">
+        <button class="btn-export green" onclick="exportRekap('xlsx')">⬇ Export Excel (.xlsx)</button>
+        <button class="btn-export" onclick="exportRekap('csv')">⬇ Export CSV</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="rtable" id="rtable">
+          <thead><tr id="rekap-head">
+            <th style="width:32px"></th>
+            <th style="text-align:left;min-width:120px">Bahan</th>
+            <th>Sat</th>
+            <th class="th-total">Total</th>
+          </tr></thead>
+          <tbody id="rekap-tb"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="panel-stok">
+      <div class="panel-head"><span class="panel-title">Stok Sisa</span></div>
+      <div id="stok-c"></div>
+    </div>
+
+    <div class="tab-panel" id="panel-histori">
+      <div class="panel-head">
+        <span class="panel-title">Histori</span>
+        <button class="chip-btn" onclick="dupFirst()">+ Duplikat</button>
+      </div>
+      <div id="hist-c"><p class="empty">Belum ada histori.</p></div>
+    </div>
+
+  </div>
+</div><!-- /page-dapur -->
+
+<!-- ══ PAGE: SETTINGS ══ -->
+<div id="page-settin
