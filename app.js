@@ -1173,11 +1173,16 @@ async function init(){
   loadTheme();
   try{STOK_KOPERASI=JSON.parse(localStorage.getItem('kok_koperasi_stok')||'[]');}
   catch(e){}
-  await Promise.all([dbLoadCustomKat(),dbLoadSettings(),dbLoadKoperasiStok()]);
+  // Render DULU dari localStorage — tidak tunggu DB
   const hash=window.location.hash.slice(1);
   const dapur=DAPURS.find(d=>d.id===hash);
   if(dapur)openDapur(dapur.id);
   else{showPage('dashboard');renderDashboard();}
+  // Sync DB di background — selesai kapanpun, re-render
+  try{
+    await Promise.all([dbLoadCustomKat(),dbLoadSettings(),dbLoadKoperasiStok()]);
+    if(!window.location.hash.slice(1))renderDashboard();
+  }catch(e){}
 }
 
 window.addEventListener('hashchange',()=>{
