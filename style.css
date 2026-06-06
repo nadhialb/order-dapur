@@ -1024,3 +1024,99 @@ button, .dapur-card, .alert-item, .sum-card, .msg-row, .oi,
 @media (max-width: 400px) {
   .card-inline { grid-template-columns: 1fr; }
 }
+
+/* ══════════════════════════════════════════
+   INPUT CARD — Redesigned for mobile
+   Fully stacked layout: label + input per row
+   No side-by-side cramping
+══════════════════════════════════════════ */
+@media (max-width: 720px) {
+
+  /* New card field layout: label left, input right */
+  .card-mobile-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 4px;
+  }
+
+  .card-field-row {
+    display: grid;
+    grid-template-columns: 90px 1fr;
+    align-items: center;
+    gap: 8px;
+    min-height: 36px;
+  }
+
+  /* Label in field row */
+  .card-field-row .card-lbl {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text2);
+    text-align: right;
+    white-space: nowrap;
+    padding-right: 2px;
+  }
+
+  /* Inputs in field row: full width */
+  .card-field-row input,
+  .card-field-row select,
+  .card-field-row .ket-wrap {
+    width: 100%;
+    min-width: 0;
+  }
+  .card-field-row .ket-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .card-field-row .ket-wrap select,
+  .card-field-row .ket-wrap input {
+    height: 38px;
+  }
+
+  /* Card item: more padding */
+  .item-card {
+    padding: 12px 14px !important;
+    margin-bottom: 12px !important;
+    border-radius: var(--radius-lg) !important;
+  }
+
+  /* Row 1: bahan name full width */
+  .card-row1 {
+    display: grid;
+    grid-template-columns: 32px 1fr 32px;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .card-row1 .inp-bahan {
+    width: 100%;
+    font-size: 14px;
+    height: 40px;
+  }
+  .card-row1 .chk {
+    width: 32px;
+    height: 32px;
+  }
+  .card-row1 .btn-x {
+    width: 32px;
+    height: 32px;
+  }
+
+  /* Day header: wrap date and order info */
+  .day-hdr {
+    padding: 0.7rem 0.85rem;
+  }
+  .day-hdr-l {
+    font-size: 12.5px;
+    flex-wrap: wrap;
+  }
+
+  /* Subtotal row: wrap nicely */
+  .item-subtotal {
+    flex-wrap: wrap;
+    gap: 5px;
+    padding: 4px 0 8px;
+  }
+}

@@ -285,7 +285,8 @@ function openDapur(dapurId){
     });
     topbar._tabsInit=true;
   }
-  window.location.hash=dapurId;
+  // Gunakan pushState bukan window.location.hash agar tidak trigger hashchange dua kali
+  history.pushState(null,'','#'+dapurId);
   showPage('dapur');
   switchTab('ringkasan');
   updateProgress();
@@ -297,7 +298,8 @@ function resetToBaseTheme(mode){
   else document.documentElement.removeAttribute('data-theme');
 }
 function goBack(){
-  window.location.hash='';
+  // Gunakan replaceState agar tidak trigger hashchange (mencegah double renderDashboard)
+  history.replaceState(null,'',location.pathname+location.search);
   resetToBaseTheme(localStorage.getItem('kok_theme')||'dark');
   showPage('dashboard');
   renderDashboard();
@@ -719,11 +721,23 @@ function rItems(di){
     if(window.innerWidth<=720){
       row.className='item-row item-card'+(ck?' is-ck':'');
       row.innerHTML=`<div class="card-row1">${fChk}${fBahan}${fDel}</div>
-        <div class="card-row2">
-          <div class="card-half"><div class="card-lbl">Jumlah & Satuan</div><div class="card-inline">${fQty}${fSat}</div></div>
-          <div class="card-half"><div class="card-lbl">Harga / H.Baru</div><div class="card-inline">${fH}${fHB}</div></div>
-        </div>
-        <div class="card-row3"><div class="card-lbl">Sumber</div>${fKet}</div>`;
+        <div class="card-mobile-fields">
+          <div class="card-field-row">
+            <span class="card-lbl">Jumlah</span>${fQty}
+          </div>
+          <div class="card-field-row">
+            <span class="card-lbl">Satuan</span>${fSat}
+          </div>
+          <div class="card-field-row">
+            <span class="card-lbl">Harga</span>${fH}
+          </div>
+          <div class="card-field-row">
+            <span class="card-lbl">H.Baru (opt.)</span>${fHB}
+          </div>
+          <div class="card-field-row">
+            <span class="card-lbl">Sumber</span>${fKet}
+          </div>
+        </div>`;
     }else{
       row.className='item-row'+(ck?' is-ck':'');
       row.innerHTML=`${fChk}${fBahan}${fQty}${fSat}${fH}${fHB}${fKet}${fDel}`;
@@ -1223,10 +1237,16 @@ async function init(){
 }
 
 window.addEventListener('hashchange',()=>{
+  // Hanya dipicu oleh navigasi eksternal (tombol back browser/iOS swipe)
+  // bukan oleh goBack() atau openDapur() yang sudah pakai pushState/replaceState
   const hash=window.location.hash.slice(1);
   const dapur=DAPURS.find(d=>d.id===hash);
-  if(dapur)openDapur(dapur.id);
-  else{showPage('dashboard');renderDashboard();}
+  if(dapur){openDapur(dapur.id);}
+  else{
+    resetToBaseTheme(localStorage.getItem('kok_theme')||'dark');
+    showPage('dashboard');
+    renderDashboard();
+  }
 });
 
 init();
