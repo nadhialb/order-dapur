@@ -451,7 +451,9 @@ function renderDashboard(){
     const isAllDone=tot>0&&dn===tot;
     const card=document.createElement('div');card.className='dapur-card';
     // Paksa elemen selalu terlihat (iOS Safari kadang menyembunyikan elemen)
-    card.style.cssText='display:block!important;visibility:visible!important;opacity:1!important;min-height:120px;';
+    card.style.display='block';
+    card.style.visibility='visible';
+    card.style.minHeight='80px';
     card.onclick=()=>openDapur(d.id);
     // PENTING: inline style untuk gradient header — pastikan selalu terlihat
     card.innerHTML=`
@@ -721,23 +723,11 @@ function rItems(di){
     if(window.innerWidth<=720){
       row.className='item-row item-card'+(ck?' is-ck':'');
       row.innerHTML=`<div class="card-row1">${fChk}${fBahan}${fDel}</div>
-        <div class="card-mobile-fields">
-          <div class="card-field-row">
-            <span class="card-lbl">Jumlah</span>${fQty}
-          </div>
-          <div class="card-field-row">
-            <span class="card-lbl">Satuan</span>${fSat}
-          </div>
-          <div class="card-field-row">
-            <span class="card-lbl">Harga</span>${fH}
-          </div>
-          <div class="card-field-row">
-            <span class="card-lbl">H.Baru (opt.)</span>${fHB}
-          </div>
-          <div class="card-field-row">
-            <span class="card-lbl">Sumber</span>${fKet}
-          </div>
-        </div>`;
+        <div class="card-row2">
+          <div class="card-half"><div class="card-lbl">Jumlah &amp; Satuan</div><div class="card-inline">${fQty}${fSat}</div></div>
+          <div class="card-half"><div class="card-lbl">Harga / H.Baru</div><div class="card-inline">${fH}${fHB}</div></div>
+        </div>
+        <div class="card-row3"><div class="card-lbl">Sumber</div>${fKet}</div>`;
     }else{
       row.className='item-row'+(ck?' is-ck':'');
       row.innerHTML=`${fChk}${fBahan}${fQty}${fSat}${fH}${fHB}${fKet}${fDel}`;
