@@ -182,9 +182,7 @@ body {
   overflow:hidden; cursor:pointer;
   transition:border-color .25s, box-shadow .25s, transform .25s;
   box-shadow:var(--shadow);
-  /* iOS Safari fix: create stacking context */
-  position: relative;
-  isolation: isolate;
+
 }
 .dapur-card:hover { border-color:var(--border2); transform:translateY(-3px); box-shadow:var(--shadow-lg) }
 .dapur-card:active { transform:scale(.985) translateZ(0) }
@@ -976,4 +974,21 @@ button, .dapur-card, .alert-item, .sum-card, .msg-row, .oi,
   .dc-prog-bar {
     overflow: hidden;
   }
+}
+
+/* ── Notif toggle (missing from original) ── */
+.notif-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: .5rem .7rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-top: .4rem;
+}
+.notif-toggle-label {
+  font-size: 12px;
+  color: var(--text2);
 }

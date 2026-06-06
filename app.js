@@ -425,6 +425,7 @@ function renderDashboard(){
   renderDashboardStok();
 
   // Dapur cards
+  try{
   const cont=document.getElementById('dapur-cards');cont.innerHTML='';
   DAPURS.forEach(d=>{
     let tot=0,dn=0,h1=0,h2=0,pisang=0;
@@ -479,7 +480,11 @@ function renderDashboard(){
   });
   // Fallback: jika kartu tidak tampil karena CSS issue, tampilkan pesan
   if(cont.children.length===0){
-    cont.innerHTML='<p style="padding:1rem;color:var(--text3);font-size:12px">Gagal memuat kartu dapur.</p>';
+    cont.innerHTML='<p style="padding:1rem;color:var(--text3);font-size:12px">Tidak ada data kartu.</p>';
+  }
+  }catch(cardErr){
+    const cont2=document.getElementById('dapur-cards');
+    if(cont2)cont2.innerHTML='<p style="padding:1rem;color:#ef4444;font-size:12px">⚠️ Error kartu: '+cardErr.message+'</p>';
   }
 }
 
@@ -1172,6 +1177,35 @@ async function resetKat(key,name){
   toast('↩ Reset');renderSettings();refreshActive();
 }
 
+
+// ═══════════════════════════════════════════════════
+// SYNC FROM SUPABASE — untuk device baru / cross-device
+// Jika dapur tidak punya data lokal, otomatis ambil dari DB
+// ═══════════════════════════════════════════════════
+async function syncAllDapursFromDB(){
+  let changed=false;
+  await Promise.all(DAPURS.map(async d=>{
+    try{
+      const local=JSON.parse(localStorage.getItem(`kok_${d.id}`)||'{}');
+      if(local.curWeekId)return; // sudah ada data lokal, skip
+      const rows=await sbG('weeks',`dapur_id=eq.${d.id}&order=updated_at.desc&limit=1`);
+      if(!rows.length)return;
+      const[ck,stok]=await Promise.all([
+        sbG('checklist',`week_id=eq.${rows[0].id}`),
+        sbG('stok',`week_id=eq.${rows[0].id}`)
+      ]);
+      localStorage.setItem(`kok_${d.id}`,JSON.stringify({
+        WD:rows[0].data,
+        CK:ck[0]?.ck_data||{},
+        STOK:stok[0]?.items||[],
+        curWeekId:rows[0].id
+      }));
+      changed=true;
+    }catch(e){}
+  }));
+  if(changed){renderDashboard();toast('✓ Data disinkron dari server');}
+}
+
 // ═══════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════
@@ -1185,7 +1219,7 @@ async function init(){
   if(dapur)openDapur(dapur.id);
   else{showPage('dashboard');renderDashboard();}
   // Sync DB di background — TIDAK re-render supaya tidak hapus kartu yang sudah ada
-  Promise.all([dbLoadCustomKat(),dbLoadSettings(),dbLoadKoperasiStok()]).catch(()=>{});
+  Promise.all([dbLoadCustomKat(),dbLoadSettings(),dbLoadKoperasiStok(),syncAllDapursFromDB()]).catch(()=>{});
 }
 
 window.addEventListener('hashchange',()=>{
