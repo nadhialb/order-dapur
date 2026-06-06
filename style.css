@@ -127,6 +127,8 @@ body {
   cursor:pointer; font-size:14px;
   display:flex; align-items:center; justify-content:center;
   transition:all .2s; color:var(--text2);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: rgba(0,0,0,0);
 }
 .icon-btn:hover, .theme-toggle:hover {
   border-color:var(--accent); color:var(--accent); background:var(--accent-bg)
@@ -178,11 +180,22 @@ body {
   background:var(--surface); border:1px solid var(--border);
   border-radius:var(--radius-xl); margin-bottom:.75rem;
   overflow:hidden; cursor:pointer;
-  transition:all .25s cubic-bezier(.4,0,.2,1);
+  transition:border-color .25s, box-shadow .25s, transform .25s;
   box-shadow:var(--shadow);
+  /* iOS Safari fix: overflow:hidden + border-radius can make element invisible */
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  position: relative;
 }
 .dapur-card:hover { border-color:var(--border2); transform:translateY(-3px); box-shadow:var(--shadow-lg) }
-.dapur-card:active { transform:scale(.985) }
+.dapur-card:active { transform:scale(.985) translateZ(0) }
+@media (hover: none) {
+  /* Touch devices: disable hover transform (can cause iOS rendering bugs) */
+  .dapur-card:hover { transform:none; box-shadow:var(--shadow) }
+  .dapur-card:active { transform:scale(.97) translateZ(0); box-shadow:var(--shadow-lg) }
+}
 
 .dc-header {
   height:64px; display:flex; align-items:center; padding:0 16px; gap:12px;
@@ -282,6 +295,8 @@ body {
   color:#fff; font-size:20px; cursor:pointer;
   display:flex; align-items:center; justify-content:center;
   flex-shrink:0; transition:background .15s;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: rgba(0,0,0,0);
 }
 .back-btn:hover { background:rgba(255,255,255,.2) }
 .dapur-topbar-text { flex:1; min-width:0 }
@@ -890,4 +905,58 @@ input::placeholder { color:var(--text3) }
   .sum-val {
     font-size: 24px;
   }
+}
+
+/* ══════════════════════════════════════════
+   iOS SAFARI SPECIFIC FIXES
+══════════════════════════════════════════ */
+
+/* Fix: backdrop-filter on sticky topbar can block touch events on iOS.
+   Use solid background on touch/mobile devices. */
+@media (hover: none) {
+  .topbar {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: var(--bg2);
+  }
+  .dapur-sticky {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  .tab-bar {
+    background: var(--bg2);
+  }
+}
+
+/* Fix: all clickable elements get reliable touch handling */
+button, .dapur-card, .alert-item, .sum-card, .msg-row, .oi,
+.hist-row, .hist-btn, .tb, .kat-opt, .sum-alert, .chk, .chk-sm {
+  touch-action: manipulation;
+}
+
+/* Fix: dapur-card children also need GPU layer for iOS compositing */
+.dc-header {
+  position: relative;
+  z-index: 1;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+}
+
+/* Fix: active states for visual tap feedback (iOS doesn't use :hover) */
+@media (hover: none) {
+  .icon-btn:active, .theme-toggle:active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-bg);
+  }
+  .back-btn:active, .back-btn-light:active {
+    background: rgba(255,255,255,.25);
+  }
+  .tb:active {
+    color: var(--dapur-accent, var(--accent));
+    background: var(--accent-bg);
+  }
+  .btn-accent:active { opacity: .8; }
+  .btn-success:active { background: rgba(34,197,94,.22); }
+  .btn-export:active { background: var(--accent-bg); }
 }
