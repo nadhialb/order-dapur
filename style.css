@@ -429,11 +429,11 @@ body {
 .card-inline input { flex:1; min-width:0 }
 .card-row3 { display:flex; flex-direction:column; gap:3px }
 
-@media(max-width:580px){
+@media(max-width:720px){
   .row-lbl { display:none }
   .item-row:not(.item-card) { display:none }
 }
-@media(min-width:581px){
+@media(min-width:721px){
   .item-card { background:transparent!important; border:none!important; padding:0!important; margin-bottom:3px!important }
   .item-card .card-row1,.item-card .card-row2,.item-card .card-row3 { display:none!important }
 }
@@ -991,4 +991,36 @@ button, .dapur-card, .alert-item, .sum-card, .msg-row, .oi,
 .notif-toggle-label {
   font-size: 12px;
   color: var(--text2);
+}
+
+/* ══ INPUT CARD — Mobile readability improvements ══ */
+@media (max-width: 720px) {
+  /* Day header: hide order-tag on small screens to save space */
+  .order-tag { display: none; }
+
+  /* Card item: stack qty/sat and harga/hbaru vertically on narrow screens */
+  .card-row2 { grid-template-columns: 1fr; gap: 6px; }
+
+  /* Card: more breathing room */
+  .item-card { padding: 10px 12px !important; margin-bottom: 10px !important; }
+
+  /* Card labels: slightly larger */
+  .card-lbl { font-size: 11px; font-weight: 700; color: var(--text2); }
+
+  /* Inline inputs in card: equal split */
+  .card-inline { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .card-inline input { min-width: 0; }
+
+  /* Day block header: allow wrapping */
+  .day-hdr { flex-wrap: wrap; gap: 4px; }
+  .day-hdr-l { font-size: 12px; }
+  .day-hdr-r { gap: 4px; }
+
+  /* Subtotal row: wrap on small screens */
+  .item-subtotal { gap: 4px; }
+}
+
+/* Very narrow phones: single column card inputs */
+@media (max-width: 400px) {
+  .card-inline { grid-template-columns: 1fr; }
 }

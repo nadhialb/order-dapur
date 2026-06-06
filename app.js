@@ -480,7 +480,7 @@ function renderDashboard(){
   });
   // Fallback: jika kartu tidak tampil karena CSS issue, tampilkan pesan
   if(cont.children.length===0){
-    cont.innerHTML='<p style="padding:1rem;color:var(--text3);font-size:12px">Tidak ada data kartu.</p>';
+    cont.innerHTML='<div style="background:#b91c1c;color:#fff;padding:12px 14px;border-radius:10px;margin:8px 0;font-size:13px;font-weight:600">⚠️ Kartu gagal tampil — coba tutup Safari dan buka ulang</div>';
   }
   }catch(cardErr){
     const cont2=document.getElementById('dapur-cards');
@@ -716,7 +716,7 @@ function rItems(di){
     const fChk=`<div class="chk ${ck?'on':''}" onclick="toggle(${di},${ii})" title="Tandai diorder">${ck?'✓':''}</div>`;
     const fDel=`<button class="btn-x" onclick="rmIt(${di},${ii})" title="Hapus">✕</button>`;
     const row=document.createElement('div');
-    if(window.innerWidth<=580){
+    if(window.innerWidth<=720){
       row.className='item-row item-card'+(ck?' is-ck':'');
       row.innerHTML=`<div class="card-row1">${fChk}${fBahan}${fDel}</div>
         <div class="card-row2">
