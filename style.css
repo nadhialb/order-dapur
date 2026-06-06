@@ -182,12 +182,9 @@ body {
   overflow:hidden; cursor:pointer;
   transition:border-color .25s, box-shadow .25s, transform .25s;
   box-shadow:var(--shadow);
-  /* iOS Safari fix: overflow:hidden + border-radius can make element invisible */
-  -webkit-transform: translateZ(0);
-  transform: translateZ(0);
-  -webkit-backface-visibility: hidden;
-  backface-visibility: hidden;
+  /* iOS Safari fix: create stacking context */
   position: relative;
+  isolation: isolate;
 }
 .dapur-card:hover { border-color:var(--border2); transform:translateY(-3px); box-shadow:var(--shadow-lg) }
 .dapur-card:active { transform:scale(.985) translateZ(0) }
@@ -934,12 +931,10 @@ button, .dapur-card, .alert-item, .sum-card, .msg-row, .oi,
   touch-action: manipulation;
 }
 
-/* Fix: dapur-card children also need GPU layer for iOS compositing */
+/* dc-header: ensure proper stacking */
 .dc-header {
   position: relative;
   z-index: 1;
-  -webkit-transform: translateZ(0);
-  transform: translateZ(0);
 }
 
 /* Fix: active states for visual tap feedback (iOS doesn't use :hover) */
@@ -959,4 +954,26 @@ button, .dapur-card, .alert-item, .sum-card, .msg-row, .oi,
   .btn-accent:active { opacity: .8; }
   .btn-success:active { background: rgba(34,197,94,.22); }
   .btn-export:active { background: var(--accent-bg); }
+}
+
+/* ══════════════════════════════════════════
+   DAPUR CARD — iOS overflow:hidden fix
+   overflow:hidden + border-radius on iOS can make elements invisible.
+   On mobile: remove overflow:hidden, compensate with explicit border-radius
+   on children that need clipping.
+══════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .dapur-card {
+    overflow: visible !important;
+  }
+  /* Compensate: round only the top corners of the header */
+  .dc-header {
+    border-top-left-radius: var(--radius-xl);
+    border-top-right-radius: var(--radius-xl);
+    overflow: hidden; /* clip the shimmer ::after inside header */
+  }
+  /* Compensate: hide the overflow of the progress bar fill */
+  .dc-prog-bar {
+    overflow: hidden;
+  }
 }

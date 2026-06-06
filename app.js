@@ -447,6 +447,8 @@ function renderDashboard(){
     const pct=tot>0?Math.round(dn/tot*100):0;
     const isAllDone=tot>0&&dn===tot;
     const card=document.createElement('div');card.className='dapur-card';
+    // Paksa elemen selalu terlihat (iOS Safari kadang menyembunyikan elemen)
+    card.style.cssText='display:block!important;visibility:visible!important;opacity:1!important;min-height:120px;';
     card.onclick=()=>openDapur(d.id);
     // PENTING: inline style untuk gradient header — pastikan selalu terlihat
     card.innerHTML=`
@@ -475,6 +477,10 @@ function renderDashboard(){
       </div>`;
     cont.appendChild(card);
   });
+  // Fallback: jika kartu tidak tampil karena CSS issue, tampilkan pesan
+  if(cont.children.length===0){
+    cont.innerHTML='<p style="padding:1rem;color:var(--text3);font-size:12px">Gagal memuat kartu dapur.</p>';
+  }
 }
 
 // ── Rename dapur langsung dari dashboard card ──
