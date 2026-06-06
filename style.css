@@ -650,3 +650,244 @@ input::placeholder { color:var(--text3) }
 .dapur-name-row {
   display:flex; align-items:center; gap:8px; padding:.55rem .7rem;
   background:var(--surface); border:1px solid var(--bor
+/* ══════════════════════════════════════════
+   MOBILE IMPROVEMENTS — Smartphone Optimized
+══════════════════════════════════════════ */
+
+/* Safe area insets (notch & home bar — iPhone X+) */
+.topbar {
+  padding-top: max(0.85rem, calc(0.85rem + env(safe-area-inset-top, 0px) - 0.85rem));
+}
+.dapur-sticky {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.toast {
+  bottom: max(1.5rem, calc(1rem + env(safe-area-inset-bottom, 0px)));
+}
+.page-body {
+  padding-bottom: max(4rem, calc(2rem + env(safe-area-inset-bottom, 0px)));
+}
+.tab-panels {
+  padding-bottom: max(4rem, calc(2rem + env(safe-area-inset-bottom, 0px)));
+}
+
+@media (max-width: 600px) {
+
+  /* ── Touch Targets: minimum 44px ── */
+  .icon-btn, .theme-toggle {
+    width: 40px;
+    height: 40px;
+    font-size: 15px;
+  }
+  .back-btn, .back-btn-light {
+    width: 40px;
+    height: 40px;
+    font-size: 22px;
+  }
+  .chk {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+  }
+  .chk-sm {
+    width: 24px;
+    height: 24px;
+    border-radius: 5px;
+    font-size: 12px;
+  }
+  .btn-x {
+    width: 32px;
+    height: 32px;
+  }
+  .hist-btn {
+    padding: 8px 14px;
+    font-size: 12px;
+  }
+
+  /* ── Rename button: always visible on mobile (no hover) ── */
+  .dc-rename-btn {
+    opacity: 1 !important;
+    width: 28px;
+    height: 28px;
+  }
+
+  /* ── Tab bar: bigger tap targets ── */
+  .tb {
+    padding: 8px 14px;
+    font-size: 12.5px;
+    min-height: 38px;
+  }
+  .tab-bar {
+    padding: 4px 6px;
+    gap: 2px;
+  }
+
+  /* ── Input fields: taller for easier tapping ── */
+  input[type="text"], input[type="number"], select {
+    height: 38px;
+    font-size: 14px;
+    padding: 6px 10px;
+  }
+  .inp-ket-custom {
+    height: 34px !important;
+  }
+
+  /* ── Page body: less side padding on very narrow screens ── */
+  .page-body {
+    padding-left: 0.85rem;
+    padding-right: 0.85rem;
+  }
+  .tab-panels {
+    padding-left: 0.85rem;
+    padding-right: 0.85rem;
+  }
+
+  /* ── Topbar: tighter on small screens ── */
+  .topbar {
+    padding: 0.75rem 1rem;
+  }
+  .topbar-title {
+    font-size: 14px;
+  }
+  .topbar-date {
+    display: none; /* hide date on very small screens — saves space */
+  }
+
+  /* ── Dashboard cards: footer text smaller ── */
+  .dc-footer span:first-child {
+    display: none; /* hide "Tap untuk buka detail" — obvious on mobile */
+  }
+
+  /* ── Checklist rows: bigger tap area ── */
+  .oi {
+    padding: 0.6rem 0.75rem;
+    min-height: 44px;
+  }
+
+  /* ── Pesan order rows: bigger tap area ── */
+  .msg-row {
+    padding: 0.5rem 0.4rem;
+    min-height: 40px;
+  }
+
+  /* ── Alert items: tap-friendly ── */
+  .alert-item {
+    padding: 0.9rem 1rem;
+  }
+
+  /* ── Summary cards ── */
+  .sum-val {
+    font-size: 28px;
+  }
+  .sum-card {
+    padding: 0.9rem 0.75rem;
+  }
+
+  /* ── Import bar: stack on small screens ── */
+  .import-bar {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .btn-accent {
+    width: 100%;
+    padding: 0.6rem 1rem;
+    text-align: center;
+    font-size: 13px;
+  }
+
+  /* ── Save button: full width ── */
+  .btn-success {
+    width: 100%;
+    justify-content: center;
+    padding: 0.75rem 1.2rem;
+    font-size: 14px;
+  }
+
+  /* ── Export buttons: stack on mobile ── */
+  .export-bar {
+    flex-direction: column;
+  }
+  .btn-export {
+    justify-content: center;
+    padding: 0.6rem 1rem;
+    font-size: 13px;
+  }
+
+  /* ── Rekap table: ensure horizontal scroll works ── */
+  #panel-rekap > div[style] {
+    -webkit-overflow-scrolling: touch;
+  }
+  .rtable th, .rtable td {
+    white-space: nowrap;
+    padding: 8px 10px;
+  }
+
+  /* ── Stok rows: taller inputs ── */
+  .stok-row-simple {
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+
+  /* ── Histori rows: wrap on mobile ── */
+  .hist-row {
+    flex-wrap: wrap;
+  }
+  .hist-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  /* ── Kat picker: full width on mobile ── */
+  .kat-picker {
+    left: 50%;
+    transform: translateX(-50%);
+    min-width: 260px;
+    top: 36px;
+  }
+  .kat-picker-grid {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+  .kat-opt {
+    padding: 8px 6px;
+    font-size: 12px;
+    text-align: center;
+  }
+
+  /* ── Settings ── */
+  .theme-options {
+    flex-direction: column;
+    gap: 6px;
+  }
+  .theme-opt {
+    justify-content: center;
+  }
+  .sumber-row input {
+    font-size: 14px;
+    height: 38px;
+  }
+
+  /* ── Offline banner: safe area ── */
+  .offline-bar {
+    padding-top: max(0.5rem, env(safe-area-inset-top, 0px));
+  }
+}
+
+/* Very small screens (≤375px) */
+@media (max-width: 375px) {
+  .dc-body {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+  .dc-stat {
+    padding: 0.3rem 0;
+  }
+  .dc-stat-val {
+    font-size: 16px;
+  }
+  .topbar-title {
+    font-size: 13px;
+  }
+  .sum-val {
+    font-size: 24px;
+  }
+}
