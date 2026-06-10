@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#0f1117">
+<title>Dapur Order</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ══ LOADING BAR ══ -->
+<div id="loading-bar"></div>
+<div class="toast" id="toast"></div>
+
+<!-- ══ PAGE: DASHBOARD ══ -->
+<div id="page-dashboard" class="page active">
+  <div class="topbar">
+    <div class="topbar-title">Dapur Order</div>
+    <div class="topbar-right">
+      <div class="topbar-date" id="dash-date"></div>
+      <button class="dash-nav-btn" onclick="showPage('master')" title="Master Dapur">📋 Master</button>
+      <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Ganti tema">🌙</button>
+    </div>
+  </div>
+  <div class="page-body">
+    <div id="alert-strip"></div>
+    <div class="section-lbl">Dapur Aktif</div>
+    <div id="dapur-cards"></div>
+    <div class="section-lbl" style="margin-top:1.5rem">Stok Sisa</div>
+    <div id="dash-stok-c"></div>
+  </div>
+</div>
+
+<!-- ══ PAGE: DETAIL DAPUR ══ -->
+<div id="page-dapur" class="page">
+  <!-- Topbar dapur -->
+  <div class="dapur-topbar" id="dapur-topbar">
+    <button class="back-btn" onclick="goBack()">‹</button>
+    <div class="dapur-topbar-text">
+      <div id="dapur-title" class="dapur-topbar-title"></div>
+      <div id="dapur-sub"   class="dapur-topbar-sub"></div>
+    </div>
+    <div class="ring-wrap">
+      <svg width="32" height="32" style="transform:rotate(-90deg)">
+        <circle cx="16" cy="16" r="12" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="2.5"/>
+        <circle id="ring-fill" cx="16" cy="16" r="12" fill="none" stroke="#4ade80"
+          stroke-width="2.5" stroke-dasharray="75.4" stroke-dashoffset="75.4"
+          stroke-linecap="round" style="transition:stroke-dashoffset .4s"/>
+      </svg>
+      <span id="ring-pct" class="ring-pct">0%</span>
+    </div>
+  </div>
+
+  <!-- Tab bar — plain div, bukan sticky -->
+  <div class="tab-bar" id="tab-bar">
+    <button class="tb active" data-tab="ringkasan">◎ Ringkasan</button>
+    <button class="tb" data-tab="input">✎ Input</button>
+    <button class="tb" data-tab="pesan">✉ Pesan</button>
+    <button class="tb" data-tab="checklist">☑ Checklist</button>
+    <button class="tb" data-tab="rekap">⊞ Rekap</button>
+    <button class="tb" data-tab="stok">📦 Stok</button>
+    <button class="tb" data-tab="histori">⏱ Histori</button>
+  </div>
+
+  <!-- Tab panels -->
+  <div class="tab-panels" id="tab-panels">
+
+    <div class="tab-panel active" id="panel-ringkasan">
+      <div id="ringkasan-c"></div>
+    </div>
+
+    <div class="tab-panel" id="panel-input">
+      <div class="import-bar">
+        <div class="import-left">
+          <div class="import-title">Import dari Excel</div>
+          <div class="import-sub">Upload .xlsx — terbaca otomatis</div>
+        </div>
+        <button class="btn-accent" onclick="triggerImport()">Pilih File</button>
+        <input type="file" id="xl-input" accept=".xlsx,.xls" style="display:none" onchange="handleImport(event)">
+      </div>
+      <div id="days-c"></div>
+      <div style="margin-top:1rem">
+        <button class="btn-success" id="btn-sv" onclick="saveW()">◈ Simpan ke Database</button>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="panel-pesan">
+      <div class="panel-head"><span class="panel-title">Pesan Order</span><span class="muted">Klik kotak untuk copy</span></div>
+      <div id="order-h-c"></div>
+    </div>
+
+    <div class="tab-panel" id="panel-checklist">
+      <div class="panel-head">
+        <span class="panel-title">Checklist Order</span>
+        <span class="chip" id="cl-lbl">0/0</span>
+      </div>
+      <div class="prog-wrap"><div class="prog-bar"><div class="prog-fill" id="cl-prog" style="width:0%"></div></div></div>
+      <div id="cl-c"></div>
+    </div>
+
+    <div class="tab-panel" id="panel-rekap">
+      <div class="panel-head"><span class="panel-title">Rekap Bahan</span><span class="chip" id="rekap-c">—</span></div>
+      <div style="overflow-x:auto">
+        <table class="rtable" id="rtable">
+          <thead><tr id="rekap-head">
+            <th style="width:24px"></th>
+            <th style="text-align:left;min-width:110px">Bahan</th>
+            <th>Sat</th>
+            <th class="th-total">Total</th>
+          </tr></thead>
+          <tbody id="rekap-tb"></tbody>
+        </table>
+      </div>
+    </div>
+
+
+    <div class="tab-panel" id="panel-stok">
+      <div class="panel-head"><span class="panel-title">Stok Sisa</span></div>
+      <div id="stok-c"></div>
+    </div>
+
+    <div class="tab-panel" id="panel-histori">
+      <div class="panel-head">
+        <span class="panel-title">Histori</span>
+        <button class="chip-btn" onclick="dupFirst()">+ Duplikat</button>
+      </div>
+      <div id="hist-c"><p class="empty">Belum ada histori.</p></div>
+    </div>
+
+  </div><!-- tab-panels -->
+</div><!-- page-dapur -->
+
+<!-- ══ PAGE: SETTINGS ══ -->
+<div id="page-settings" class="page">
+  <div class="topbar">
+    <button class="back-btn" onclick="goBack()">‹</button>
+    <div class="topbar-title">Pengaturan</div>
+  </div>
+  <div class="page-body" id="settings-c">
+    <!-- Master bahan section injected by renderMasterSection -->
+    <div class="settings-section master-section" id="master-section-wrap">
+      <div class="settings-title">Master Bahan</div>
+      <div class="section-sub" style="font-size:11px;color:var(--text3);margin-bottom:.65rem">
+        Data harga & satuan per dapur — terupdate otomatis saat simpan
+      </div>
+      <div id="master-section-c"><p class="empty" style="padding:1rem 0;font-size:12px">Memuat...</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PAGE: MASTER DAPUR ══ -->
+<div id="page-master" class="page">
+  <div class="topbar">
+    <button class="back-btn" style="background:var(--bg3);border-color:var(--border2);color:var(--text)" onclick="showPage('dashboard');renderDashboard()">‹</button>
+    <div class="topbar-title">📋 Master Dapur</div>
+    <div class="topbar-right">
+      <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
+    </div>
+  </div>
+  <div class="page-body" id="master-page-c">
+    <p class="empty">Memuat...</p>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
