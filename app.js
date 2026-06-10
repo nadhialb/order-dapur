@@ -290,9 +290,9 @@ function saveLocalDebounced(){
 function loadLocal(dapurId){
   try{
     const s=JSON.parse(localStorage.getItem(`kok_${dapurId}`)||'{}');
-    WD=s.WD||JSON.parse(JSON.stringify(DEFAULT_WD));
+    WD=s.WD||{days:[]};
     CK=s.CK||{};STOK=s.STOK||[];curWeekId=s.curWeekId||null;
-  }catch(e){WD=JSON.parse(JSON.stringify(DEFAULT_WD));CK={};STOK=[];curWeekId=null;}
+  }catch(e){WD={days:[]};CK={};STOK=[];curWeekId=null;}
   try{
     const g=JSON.parse(localStorage.getItem('kok_global')||'{}');
     if(g.SUMBER)SUMBER=g.SUMBER;
