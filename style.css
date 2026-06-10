@@ -642,3 +642,50 @@ input::placeholder { color:var(--text3) }
 /* ══ STATS VISUAL — mini bar ══ */
 .dc-stat-bar{height:2px;border-radius:1px;margin-top:4px;background:var(--surface2);overflow:hidden}
 .dc-stat-bar-fill{height:100%;border-radius:1px;transition:width .5s ease}
+
+/* ══ AUTOCOMPLETE ══ */
+.autocomplete-wrap { position:relative; flex:1 }
+.ac-dropdown {
+  position:absolute; top:100%; left:0; right:0; z-index:300;
+  background:var(--surface2); border:1px solid var(--border2);
+  border-radius:var(--radius); box-shadow:0 8px 24px rgba(0,0,0,.3);
+  max-height:220px; overflow-y:auto; margin-top:2px;
+}
+.ac-item {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:8px 11px; cursor:pointer; transition:background .1s;
+  border-bottom:1px solid var(--border);
+}
+.ac-item:last-child { border-bottom:none }
+.ac-item:hover { background:var(--accent-bg) }
+.ac-nama { font-size:12px; font-weight:500; color:var(--text) }
+.ac-detail { font-size:11px; color:var(--text3); font-variant-numeric:tabular-nums }
+
+/* ══ INPUT — 7 kolom (tanpa keterangan) ══ */
+@media(min-width:581px){
+  .row-lbl { grid-template-columns:26px 1fr 62px 50px 82px 82px 26px!important }
+  .item-row { grid-template-columns:26px 1fr 62px 50px 82px 82px 26px!important }
+  .item-row .autocomplete-wrap { display:contents }
+  .item-row .autocomplete-wrap input { width:100% }
+}
+
+/* ══ MASTER BAHAN di SETTINGS ══ */
+.master-section { margin-top:1.5rem }
+.master-search-wrap { position:relative; margin-bottom:.75rem }
+.master-list { max-height:400px; overflow-y:auto }
+.master-row {
+  display:grid; grid-template-columns:1fr 58px 90px 90px 90px 90px 28px;
+  gap:5px; align-items:center; padding:5px 0;
+  border-bottom:1px solid var(--border);
+}
+.master-row:last-child { border-bottom:none }
+.master-hdr {
+  display:grid; grid-template-columns:1fr 58px 90px 90px 90px 90px 28px;
+  gap:5px; padding:4px 0 6px;
+  font-size:10px; color:var(--text3); font-weight:700;
+  text-transform:uppercase; letter-spacing:.4px;
+  border-bottom:2px solid var(--border2); margin-bottom:4px;
+}
+.master-hdr span:nth-child(n+3) { text-align:right }
+.master-row input { font-size:11px; height:26px; padding:3px 6px }
+.master-row input.harga-input { text-align:right; font-variant-numeric:tabular-nums }

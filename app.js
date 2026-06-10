@@ -39,6 +39,76 @@ function saveDapurName(id, name){
 
 
 // ═══════════════════════════════════════════════════
+// MASTER BAHAN
+// ═══════════════════════════════════════════════════
+let MASTER = []; // cache lokal: [{nama, kategori, satuan, harga_kebonsari_001, ...}]
+let masterLoaded = false;
+
+// Key kolom harga per dapur
+function hargaCol(dapurId){ return 'harga_'+dapurId.replace(/-/g,'_'); }
+
+async function dbLoadMaster(){
+  try{
+    const rows = await sbG('master_bahan','order=nama.asc&limit=500');
+    MASTER = rows;
+    masterLoaded = true;
+  }catch(e){ console.warn('master load fail:', e); }
+}
+
+async function dbUpsertMaster(nama, satuan, kategori, dapurId, harga){
+  const col = hargaCol(dapurId);
+  const key = nama.toLowerCase().trim();
+  const existing = MASTER.find(m => m.nama.toLowerCase().trim() === key);
+  try{
+    if(existing){
+      const upd = {satuan, updated_at: new Date().toISOString()};
+      if(kategori) upd.kategori = kategori;
+      if(harga)    upd[col] = harga;
+      await sbPa('master_bahan', `nama_lower=eq.${encodeURIComponent(key)}`, upd);
+      Object.assign(existing, upd);
+    } else {
+      const ins = {nama:toTitle(nama), satuan, updated_at:new Date().toISOString()};
+      if(kategori) ins.kategori = kategori;
+      if(harga)    ins[col] = harga;
+      const rows = await sbP('master_bahan', ins);
+      if(rows[0]) MASTER.push(rows[0]);
+    }
+  }catch(e){ console.warn('master upsert fail:', e); }
+}
+
+async function dbSyncMasterFromWeek(){
+  // Setelah simpan minggu, update master dengan harga terbaru dari WD
+  if(!curDapurId) return;
+  const col = hargaCol(curDapurId);
+  WD.days.forEach(day => {
+    day.items.forEach(item => {
+      if(!item.b) return;
+      const harga = item.hb || item.h;
+      if(harga) dbUpsertMaster(item.b, normSat(item.s||'kg'), gc(item.b), curDapurId, harga);
+    });
+  });
+}
+
+// Cari bahan di master (case-insensitive, partial match)
+function searchMaster(query){
+  if(!query || query.length < 2) return [];
+  const q = query.toLowerCase().trim();
+  return MASTER.filter(m => m.nama.toLowerCase().includes(q)).slice(0, 8);
+}
+
+// Ambil harga bahan di master untuk dapur ini
+function getMasterHarga(nama){
+  const col = hargaCol(curDapurId);
+  const m = MASTER.find(m => m.nama.toLowerCase().trim() === nama.toLowerCase().trim());
+  return m ? (m[col] || null) : null;
+}
+function getMasterSatuan(nama){
+  const m = MASTER.find(m => m.nama.toLowerCase().trim() === nama.toLowerCase().trim());
+  return m ? (m.satuan || null) : null;
+}
+
+
+// ═══════════════════════════════════════════════════
 // THEME (DARK / LIGHT)
 // ═══════════════════════════════════════════════════
 function toggleTheme(){
@@ -201,9 +271,15 @@ const DEFAULT_WD={days:[
   ]},
 ]};
 
+let _saveTimer=null;
 function saveLocal(){
   try{localStorage.setItem(`kok_${curDapurId}`,JSON.stringify({WD,CK,STOK,curWeekId}));}catch(e){}
   try{localStorage.setItem('kok_global',JSON.stringify({SUMBER,CUSTOM_KAT}));}catch(e){}
+}
+// Debounced version — gunakan ini untuk input yang sering berubah
+function saveLocalDebounced(){
+  clearTimeout(_saveTimer);
+  _saveTimer=setTimeout(saveLocal, 400);
 }
 function loadLocal(dapurId){
   try{
@@ -285,6 +361,8 @@ function openDapur(dapurId){
   curDapurId=dapurId;curDapurCfg=cfg;
   loadLocal(dapurId);
   applyDapurTheme(cfg);
+  // Reload master kalau belum ada (untuk autocomplete)
+  if(!masterLoaded) dbLoadMaster();
 
   // Update topbar dapur
   const topbar=document.getElementById('dapur-topbar');
@@ -717,6 +795,7 @@ function refreshActive(){
   if(curTab==='input')      renderInput(false);
   if(curTab==='pesan')      renderOrderH();
   if(curTab==='checklist')  renderCL();
+  if(curTab==='rekap')      renderRekap();
   updateProgress();
 }
 function updateProgress(){
@@ -767,9 +846,13 @@ async function handleImport(evt){
       if(typeof c==='string'&&c.startsWith('='))return;
       let nb=toTitle(b.trim());
       if(nb.toLowerCase()==='nasi'||nb.toLowerCase().startsWith('nasi '))nb='Beras';
-      const qty=c!==''&&c!==null?parseFloat(String(c).replace(/[^0-9.]/g,''))||null:null;
-      const harga=e!==''&&e!==null?parseFloat(String(e).replace(/[^0-9.]/g,''))||null:null;
-      curDay.items.push({b:nb,q:qty,s:normSat(d),h:harga,hb:null,ket:''});
+            const qty=c!==''&&c!==null?parseFloat(String(c).replace(/[^0-9.]/g,''))||null:null;
+      const hargaExcel=e!==''&&e!==null?parseFloat(String(e).replace(/[^0-9.]/g,''))||null:null;
+      const sat=normSat(d)||getMasterSatuan(namaB)||'kg';
+      const hargaMaster=getMasterHarga(namaB);
+      const harga=hargaExcel||hargaMaster;
+      const needsReview=!!(hargaExcel&&hargaMaster&&hargaExcel!==hargaMaster);
+      curDay.items.push({b:namaB,q:qty,s:sat,h:harga,hb:needsReview?hargaMaster:null,ket:''});
     });
     const valid=newDays.filter(d=>d.items.length>0);
     if(!valid.length){toast('⚠️ Format tidak terbaca.',4000);evt.target.value='';return;}
@@ -784,42 +867,6 @@ async function handleImport(evt){
 // ═══════════════════════════════════════════════════
 // INPUT
 // ═══════════════════════════════════════════════════
-function sumberOptions(sel){
-  return SUMBER.map(s=>`<option value="${escH(s)}" ${sel===s?'selected':''}>${escH(s)}</option>`).join('')
-    +`<option value="__lain__" ${sel&&!SUMBER.includes(sel)?'selected':''}>Lainnya...</option>`;
-}
-
-function renderInput(full=true){
-  const c=document.getElementById('days-c');c.innerHTML='';
-  WD.days.forEach((day,di)=>{
-    const dN=day.items.filter((_,ii)=>CK[iid(di,ii)]).length;
-    const allDone=dN===day.items.length&&day.items.length>0;
-    const el=document.createElement('div');el.className='day-block';
-    el.innerHTML=`<div class="day-hdr" onclick="togDay(${di})">
-        <div class="day-hdr-l">${escH(fmtTgl(day.n))}<span class="chip ${allDone?'green':''}" id="bdg-${di}">${dN}/${day.items.length}</span></div>
-        <div class="day-hdr-r"><span class="order-tag">${escH(day.od)}</span><span class="chev" id="chv-${di}">▾</span></div>
-      </div>
-      <div class="day-body" id="db-${di}">
-        <div class="row-lbl"><span></span><span>Bahan</span><span>Jml</span><span>Sat</span><span>Harga</span><span>H.Baru</span><span>Keterangan</span><span></span></div>
-        <div id="it-${di}"></div>
-        <button class="btn-add" onclick="addIt(${di})">+ Tambah bahan</button>
-      </div>`;
-    c.appendChild(el);rItems(di);
-  });
-  updateProgress();
-}
-
-function togDay(di){
-  const b=document.getElementById(`db-${di}`),ch=document.getElementById(`chv-${di}`);
-  const open=b.style.display!=='none';b.style.display=open?'none':'block';
-  if(ch)ch.className='chev'+(open?'':' open');
-}
-
-function sumberOptions(sel){
-  return SUMBER.map(s=>`<option value="${escH(s)}" ${sel===s?'selected':''}>${escH(s)}</option>`).join('')
-    +`<option value="__lain__" ${sel&&!SUMBER.includes(sel)?'selected':''}>Lainnya...</option>`;
-}
-
 function rItems(di){
   const c=document.getElementById(`it-${di}`);if(!c)return;c.innerHTML='';
   WD.days[di].items.forEach((item,ii)=>{
@@ -827,38 +874,35 @@ function rItems(di){
     const cat=gc(item.b),cfg=CC[cat];
     const hargaAktif=item.hb||item.h;
     const total=(item.q&&hargaAktif)?item.q*hargaAktif:null;
-    const isCustomKet=item.ket&&!SUMBER.includes(item.ket);
     const hMissing=!item.h&&!item.hb;
     const isCustomKat=CUSTOM_KAT[item.b.toLowerCase().trim()];
 
-    const fBahan=`<input type="text" class="inp-bahan" value="${escH(item.b)}" placeholder="Nama bahan"
-      onblur="upItB(${di},${ii},this.value)" oninput="upIt(${di},${ii},'b',this.value)">`;
+    const fChk=`<div class="chk ${ck?'on':''}" onclick="toggle(${di},${ii})">${ck?'✓':''}</div>`;
+    const fBahan=`<div class="autocomplete-wrap" style="position:relative;flex:1">
+      <input type="text" class="inp-bahan" value="${escH(item.b)}" placeholder="Nama bahan"
+        autocomplete="off"
+        oninput="upIt(${di},${ii},'b',this.value);showAC(${di},${ii},this.value,this)"
+        onblur="upItB(${di},${ii},this.value)"
+        onfocus="showAC(${di},${ii},this.value,this)">
+      <div class="ac-dropdown" id="ac-${di}-${ii}" style="display:none"></div>
+    </div>`;
     const fQty=`<input type="text" class="inp-num" value="${item.q?fNum(item.q):''}" placeholder="Qty"
       onblur="upItN(${di},${ii},'q',this.value)" onfocus="this.value=this.value.replace(/[.]/g,'')">`;
     const fSat=`<input type="text" class="inp-sat" value="${escH(normSat(item.s||''))}" placeholder="kg"
       oninput="upIt(${di},${ii},'s',this.value)">`;
-    const fH=`<input type="text" class="inp-num${hMissing?' harga-missing':''}" value="${item.h?fNum(item.h):''}"
-      placeholder="${hMissing?'⚠ harga':'harga'}"
+    const fH=`<input type="text" class="inp-num${hMissing?' harga-missing':''}"
+      value="${item.h?fNum(item.h):''}" placeholder="${hMissing?'⚠ harga':'harga'}"
       onblur="upItN(${di},${ii},'h',this.value)" onfocus="this.value=this.value.replace(/[.]/g,'')">`;
-    const fHB=`<input type="text" class="inp-num inp-hbaru${item.hb?' changed':''}" value="${item.hb?fNum(item.hb):''}"
-      placeholder="ubah harga"
+    const fHB=`<input type="text" class="inp-num inp-hbaru${item.hb?' changed':''}"
+      value="${item.hb?fNum(item.hb):''}" placeholder="ubah harga"
       onblur="upItN(${di},${ii},'hb',this.value)" onfocus="this.value=this.value.replace(/[.]/g,'')">`;
-    const fKet=`<div class="ket-wrap" id="ketwrap-${di}-${ii}">
-      <select class="inp-ket-sel" onchange="ketC(${di},${ii},this.value)">
-        <option value="">— sumber —</option>${sumberOptions(isCustomKet?'__lain__':item.ket)}
-      </select>
-      ${isCustomKet
-        ?`<input type="text" class="inp-ket-custom" value="${escH(item.ket)}" placeholder="nama dapur..." oninput="upIt(${di},${ii},'ket',this.value)" onblur="saveLocal()">`
-        :`<input type="text" class="inp-ket-custom" style="display:none" placeholder="nama dapur..." oninput="upIt(${di},${ii},'ket',this.value)">`}
-      </div>`;
-    const fChk=`<div class="chk ${ck?'on':''}" onclick="toggle(${di},${ii})" title="Tandai diorder">${ck?'✓':''}</div>`;
-    const fDel=`<button class="btn-x" onclick="rmIt(${di},${ii})" title="Hapus">✕</button>`;
+    const fDel=`<button class="btn-x" onclick="rmIt(${di},${ii})">✕</button>`;
 
     const row=document.createElement('div');
 
     if(window.innerWidth<=580){
-      // MOBILE: kartu vertikal
-      row.className='item-row item-card'+(ck?' is-ck':'');
+      // MOBILE: kartu vertikal (tanpa keterangan)
+      row.className='item-card'+(ck?' is-ck':'');
       row.innerHTML=`
         <div class="card-row1">${fChk}${fBahan}${fDel}</div>
         <div class="card-row2">
@@ -870,15 +914,11 @@ function rItems(di){
             <div class="card-lbl">Harga / H.Baru</div>
             <div class="card-inline">${fH}${fHB}</div>
           </div>
-        </div>
-        <div class="card-row3">
-          <div class="card-lbl">Sumber</div>
-          ${fKet}
         </div>`;
     } else {
-      // DESKTOP: grid 8 kolom
+      // DESKTOP: 7 kolom (tanpa keterangan)
       row.className='item-row'+(ck?' is-ck':'');
-      row.innerHTML=`${fChk}${fBahan}${fQty}${fSat}${fH}${fHB}${fKet}${fDel}`;
+      row.innerHTML=`${fChk}${fBahan}${fQty}${fSat}${fH}${fHB}${fDel}`;
     }
     c.appendChild(row);
 
@@ -892,26 +932,67 @@ function rItems(di){
           title="Klik untuk ubah kategori">${cfg.e} ${cfg.l}${isCustomKat?' ✏️':''}</button>
       </div>
       ${total?`<span class="subtotal-val">= Rp ${fNum(total)}</span>`:''}
-      ${item.hb?'<span class="hbaru-badge">harga diubah</span>':''}
-      ${item.ket&&item.ket!=='Beli Sendiri'?`<span class="ket-badge">${escH(item.ket)}</span>`:''}`;
+      ${item.hb?'<span class="hbaru-badge">harga diubah</span>':''}`;
     c.appendChild(sub);
   });
 }
+
+// ── AUTOCOMPLETE ──
+let _acTimer=null;
+function showAC(di,ii,val,inputEl){
+  clearTimeout(_acTimer);
+  const dd=document.getElementById(`ac-${di}-${ii}`);
+  if(!dd)return;
+  if(!val||val.length<2){dd.style.display='none';return;}
+  _acTimer=setTimeout(()=>{
+    const results=searchMaster(val);
+    if(!results.length){dd.style.display='none';return;}
+    dd.innerHTML=results.map(m=>{
+      const harga=m[hargaCol(curDapurId)];
+      return`<div class="ac-item" onmousedown="pickAC(${di},${ii},'${escH(m.nama)}','${escH(m.satuan||'kg')}',${harga||'null'})">
+        <span class="ac-nama">${escH(m.nama)}</span>
+        <span class="ac-detail">${escH(m.satuan||'kg')}${harga?' · Rp '+fNum(harga):''}</span>
+      </div>`;
+    }).join('');
+    dd.style.display='block';
+  },120);
+}
+
+function pickAC(di,ii,nama,satuan,harga){
+  // Isi field dari master
+  WD.days[di].items[ii].b=nama;
+  WD.days[di].items[ii].s=satuan;
+  if(harga) WD.days[di].items[ii].h=harga;
+  saveLocalDebounced();
+  // Tutup dropdown
+  const dd=document.getElementById(`ac-${di}-${ii}`);
+  if(dd)dd.style.display='none';
+  rItems(di);
+}
+
+// Tutup semua dropdown saat klik luar
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.autocomplete-wrap')){
+    document.querySelectorAll('.ac-dropdown').forEach(d=>d.style.display='none');
+  }
+});
 
 function ketC(di,ii,val){
   if(val==='__lain__'){WD.days[di].items[ii].ket='';saveLocal();rItems(di);
     setTimeout(()=>{const w=document.getElementById(`ketwrap-${di}-${ii}`);if(w){const inp=w.querySelector('.inp-ket-custom');if(inp){inp.style.display='';inp.focus();}}},50);
   }else{WD.days[di].items[ii].ket=val;saveLocal();rItems(di);}
 }
-function upIt(di,ii,f,v){WD.days[di].items[ii][f]=v;saveLocal();}
+function upIt(di,ii,f,v){WD.days[di].items[ii][f]=v;saveLocalDebounced();}
 function upItB(di,ii,v){WD.days[di].items[ii].b=toTitle(v);saveLocal();rItems(di);}
 function upItN(di,ii,f,v){const c=String(v).replace(/\./g,'').replace(/[^0-9]/g,'');WD.days[di].items[ii][f]=c?parseInt(c):null;saveLocal();rItems(di);}
 function addIt(di){WD.days[di].items.push({b:'',q:null,s:'kg',h:null,hb:null,ket:''});saveLocal();renderInput(false);}
 function rmIt(di,ii){WD.days[di].items.splice(ii,1);delete CK[iid(di,ii)];saveLocal();renderInput(false);}
 async function saveW(){
   await dbSave();
+  // Update master bahan dengan harga terbaru
+  await dbSyncMasterFromWeek();
   const btn=document.getElementById('btn-sv'),o=btn.innerHTML;
-  btn.innerHTML='✓';setTimeout(()=>{btn.innerHTML=o;},2000);
+  btn.innerHTML='✓ Tersimpan';setTimeout(()=>{btn.innerHTML=o;},2000);
 }
 
 // ═══════════════════════════════════════════════════
@@ -1249,6 +1330,89 @@ async function renderSettings(){
       </div>
     </div>`;
   renderSumberList();
+  renderMasterSection();
+}
+
+async function renderMasterSection(){
+  const cont=document.getElementById('master-section-c');
+  if(!cont)return;
+  if(!masterLoaded) await dbLoadMaster();
+  
+  if(!MASTER.length){
+    cont.innerHTML=`<p class="empty" style="padding:1rem 0;font-size:12px">
+      Belum ada data master. Data akan otomatis terisi setelah kamu simpan minggu pertama.</p>`;
+    return;
+  }
+
+  cont.innerHTML=`
+    <div class="master-hdr">
+      <span>Bahan</span><span>Sat</span>
+      <span style="text-align:right">Kebonsari</span>
+      <span style="text-align:right">Ajung Ajung</span>
+      <span style="text-align:right">Dapur 3</span>
+      <span style="text-align:right">Dapur 4</span>
+      <span></span>
+    </div>
+    <div id="master-rows"></div>
+    <button class="btn-add" style="margin-top:.5rem" onclick="addMasterRow()">+ Tambah bahan</button>`;
+
+  renderMasterRows();
+}
+
+function renderMasterRows(){
+  const cont=document.getElementById('master-rows');if(!cont)return;
+  cont.innerHTML='';
+  MASTER.forEach((m,i)=>{
+    const row=document.createElement('div');row.className='master-row';
+    row.innerHTML=`
+      <input type="text" value="${escH(m.nama)}" placeholder="Nama bahan"
+        onblur="upMaster(${i},'nama',this.value)">
+      <input type="text" value="${escH(m.satuan||'kg')}" class="inp-sat" style="text-align:center;font-size:11px;height:26px"
+        onblur="upMaster(${i},'satuan',this.value)">
+      <input type="text" class="harga-input" value="${m.harga_kebonsari_001?fNum(m.harga_kebonsari_001):''}" placeholder="—"
+        onblur="upMasterH(${i},'harga_kebonsari_001',this.value)" onfocus="this.value=this.value.replace(/[.]/g,'')">
+      <input type="text" class="harga-input" value="${m.harga_ajung_ajung_3?fNum(m.harga_ajung_ajung_3):''}" placeholder="—"
+        onblur="upMasterH(${i},'harga_ajung_ajung_3',this.value)" onfocus="this.value=this.value.replace(/[.]/g,'')">
+      <input type="text" class="harga-input" value="${m.harga_dapur_3?fNum(m.harga_dapur_3):''}" placeholder="—"
+        onblur="upMasterH(${i},'harga_dapur_3',this.value)" onfocus="this.value=this.value.replace(/[.]/g,'')">
+      <input type="text" class="harga-input" value="${m.harga_dapur_4?fNum(m.harga_dapur_4):''}" placeholder="—"
+        onblur="upMasterH(${i},'harga_dapur_4',this.value)" onfocus="this.value=this.value.replace(/[.]/g,'')">
+      <button class="btn-x" onclick="delMasterRow(${i})">✕</button>`;
+    cont.appendChild(row);
+  });
+}
+
+async function upMaster(i,field,val){
+  if(!MASTER[i])return;
+  MASTER[i][field]=field==='nama'?toTitle(val):val;
+  try{
+    await sbPa('master_bahan',`id=eq.${MASTER[i].id}`,
+      {[field]:MASTER[i][field],updated_at:new Date().toISOString()});
+  }catch(e){}
+}
+async function upMasterH(i,col,val){
+  if(!MASTER[i])return;
+  const n=parseInt(String(val).replace(/[^0-9]/g,''))||null;
+  MASTER[i][col]=n;
+  try{
+    await sbPa('master_bahan',`id=eq.${MASTER[i].id}`,
+      {[col]:n,updated_at:new Date().toISOString()});
+  }catch(e){}
+}
+async function addMasterRow(){
+  const rows=await sbP('master_bahan',{nama:'Bahan Baru',satuan:'kg'});
+  if(rows[0])MASTER.push(rows[0]);
+  renderMasterRows();
+  setTimeout(()=>{
+    const inputs=document.querySelectorAll('#master-rows .master-row input');
+    if(inputs.length)inputs[inputs.length-7]?.focus();
+  },50);
+}
+async function delMasterRow(i){
+  if(!MASTER[i])return;
+  if(!confirm(`Hapus "${MASTER[i].nama}" dari master?`))return;
+  try{await sbD('master_bahan',`id=eq.${MASTER[i].id}`);}catch(e){}
+  MASTER.splice(i,1);renderMasterRows();
 }
 
 function saveDapurNameUI(id, name){
@@ -1284,7 +1448,7 @@ async function resetKat(key,name){
 // ═══════════════════════════════════════════════════
 async function init(){
   loadTheme();
-  await Promise.all([dbLoadCustomKat(),dbLoadSettings()]);
+  await Promise.all([dbLoadCustomKat(),dbLoadSettings(),dbLoadMaster()]);
   const hash=window.location.hash.slice(1);
   const dapur=DAPURS.find(d=>d.id===hash);
   if(dapur){openDapur(dapur.id);}

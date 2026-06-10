@@ -63,3 +63,35 @@ do $$ begin
   if not exists (select 1 from pg_policies where tablename='settings'        and policyname='allow_all_settings')  then create policy "allow_all_settings"  on settings        for all using (true) with check (true); end if;
   if not exists (select 1 from pg_policies where tablename='custom_kategori' and policyname='allow_all_kat')       then create policy "allow_all_kat"       on custom_kategori for all using (true) with check (true); end if;
 end $$;
+
+-- ══════════════════════════════════════════
+-- MASTER BAHAN (tambahan — aman dijalankan ulang)
+-- ══════════════════════════════════════════
+
+create table if not exists master_bahan (
+  id              uuid primary key default gen_random_uuid(),
+  nama            text unique not null,
+  nama_lower      text unique generated always as (lower(trim(nama))) stored,
+  kategori        text,
+  satuan          text default 'kg',
+  harga_kebonsari_001  bigint,
+  harga_ajung_ajung_3  bigint,
+  harga_dapur_3        bigint,
+  harga_dapur_4        bigint,
+  updated_at      timestamptz default now()
+);
+
+alter table master_bahan enable row level security;
+
+do $$ begin
+  if not exists (
+    select 1 from pg_policies
+    where tablename='master_bahan' and policyname='allow_all_master'
+  ) then
+    create policy "allow_all_master" on master_bahan
+      for all using (true) with check (true);
+  end if;
+end $$;
+
+-- Index untuk pencarian cepat
+create index if not exists idx_master_bahan_lower on master_bahan(nama_lower);
