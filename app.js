@@ -836,40 +836,54 @@ async function handleImport(evt){
     const wb=XLSX.read(data,{type:'array'});
     const sn=wb.SheetNames.includes('Menu Harian')?'Menu Harian':wb.SheetNames[0];
     const rows=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,defval:''});
-    const DAY=/(\d{1,2})\s+(Januari|Februari|Maret|April|Mei|Juni|Juli|Agustus|September|Oktober|November|Desember)\s+(\d{4})/i;
-    const SKIP=/^(menu|bahan|kebutuhan|satuan|harga|total|pagu|sisa|keterangan)/i;
+    const BULAN_LC=['januari','februari','maret','april','mei','juni','juli','agustus','september','oktober','november','desember'];
     const newDays=[];let curDay=null;
     rows.forEach(row=>{
-      const a=String(row[0]||'').trim(),b=String(row[1]||'').trim();
-      const c=row[2],d=String(row[3]||'').trim(),e=row[4];
-      if(DAY.test(a)&&!b){
+      const a=String(row[0]||'').trim();
+      const b=String(row[1]||'').trim();
+      const c=row[2], d=String(row[3]||'').trim(), e=row[4];
+
+      // Deteksi baris tanggal: mengandung nama bulan Indonesia
+      const hasMonth=BULAN_LC.some(m=>a.toLowerCase().includes(m));
+      const hasYear=/20\d\d/.test(a);
+      if(hasMonth&&hasYear&&!b){
         const formatted=fmtTgl(a);
         const od=orderDay(a);
-        const tm=a.match(/(\d{1,2})\s+(\w+)\s+(\d{4})/);
-        let os='';
-        if(tm){const bi=BULAN.findIndex(bx=>bx.toLowerCase()===tm[2].toLowerCase());const dt=new Date(parseInt(tm[3]),bi>=0?bi:0,parseInt(tm[1]));os=`${HARI[dt.getDay()]} ${String(parseInt(tm[1])).padStart(2,'0')}/${String((bi>=0?bi:0)+1).padStart(2,'0')}`;}
+        // Short label untuk os
+        const numMatch=a.match(/(\d{1,2})/);
+        const monMatch=BULAN_LC.findIndex(m=>a.toLowerCase().includes(m));
+        const os=numMatch&&monMatch>=0
+          ? a.split(',')[0].trim()+' '+String(parseInt(numMatch[0])).padStart(2,'0')+'/'+(monMatch+1).toString().padStart(2,'0')
+          : a.split(',')[0].trim();
         if(!curDay||curDay.n!==formatted){curDay={n:formatted,od,os,items:[]};newDays.push(curDay);}
         return;
       }
-      if(SKIP.test(a)||SKIP.test(b)||!curDay||!b)return;
+
+      // Skip baris header & summary
+      const aLow=a.toLowerCase(), bLow=b.toLowerCase();
+      if(['menu','bahan','kebutuhan','satuan','harga','total','pagu','sisa','keterangan'].some(k=>aLow.startsWith(k)||bLow.startsWith(k)))return;
+      if(!curDay||!b)return;
       if(typeof c==='string'&&c.startsWith('='))return;
+
       let nb=toTitle(b.trim());
       if(nb.toLowerCase()==='nasi'||nb.toLowerCase().startsWith('nasi '))nb='Beras';
-      const qty=c!==''&&c!==null?parseFloat(String(c).replace(/[^0-9.]/g,''))||null:null;
+      const qty=c!==''&&c!=null?parseFloat(String(c).replace(/[^0-9.]/g,''))||null:null;
       const sat=normSat(d)||'kg';
-      const harga=e!==''&&e!==null?parseFloat(String(e).replace(/[^0-9.]/g,''))||null:null;
+      const harga=e!==''&&e!=null?parseFloat(String(e).replace(/[^0-9.]/g,''))||null:null;
       curDay.items.push({b:nb,q:qty,s:sat,h:harga,hb:null,ket:''});
     });
     const valid=newDays.filter(d=>d.items.length>0);
-    if(!valid.length){toast('⚠️ Format tidak terbaca.',4000);evt.target.value='';return;}
+    if(!valid.length){toast('⚠️ Format tidak terbaca — pastikan nama hari dan tanggal ada di kolom A',5000);evt.target.value='';return;}
     WD={days:valid};CK={};curWeekId=null;
     saveLocal();renderInput();updateNavDots();
     document.getElementById('dapur-sub').textContent=fmtTgl(WD.days[0].n);
-    toast(`✓ ${valid.length} hari diimport — klik Simpan`,3000);
-  }catch(err){console.error('Import error:',err);toast('⚠️ Gagal: '+err.message,4000);}
+    toast('✓ '+valid.length+' hari diimport ('+valid.reduce((s,d)=>s+d.items.length,0)+' bahan) — klik Simpan',3500);
+  }catch(err){
+    console.error('Import error:',err);
+    toast('⚠️ Error: '+err.message,5000);
+  }
   evt.target.value='';
 }
-
 // ═══════════════════════════════════════════════════
 // INPUT
 // ═══════════════════════════════════════════════════
