@@ -829,74 +829,59 @@ async function handleImport(evt){
     const sn=wb.SheetNames.includes('Menu Harian')?'Menu Harian':wb.SheetNames[0];
     const rows=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,defval:''});
     const DAY=/(\d{1,2})\s+(Januari|Februari|Maret|April|Mei|Juni|Juli|Agustus|September|Oktober|November|Desember)\s+(\d{4})/i;
-    // Skip: baris header, total, pagu, sisa — tapi JANGAN skip baris yang A kosong (bahan lanjutan)
-    const SKIP=/^(menu|bahan|kebutuhan|satuan|harga\s*per|total\s*biaya|total$|pagu|sisa|keterangan)/i;
+    const SKIP=/^(menu|bahan|kebutuhan|satuan|harga|total|pagu|sisa|keterangan)/i;
     const newDays=[];let curDay=null;
     rows.forEach(row=>{
-      // Deteksi tanggal: bisa di kolom A atau B
       const a=String(row[0]||'').trim();
       const b=String(row[1]||'').trim();
+      const c=row[2], d=String(row[3]||'').trim(), e=row[4];
 
-      // Cek apakah baris ini adalah baris tanggal hari
-      const dayStr = DAY.test(a) ? a : (DAY.test(b) ? b : null);
-      if(dayStr && !curDay?.items?.length || (dayStr && DAY.test(a))){
-        if(dayStr){
-          const formatted=fmtTgl(dayStr);
-          const od=orderDay(dayStr);
-          const tm=dayStr.match(/(\d{1,2})\s+(\w+)\s+(\d{4})/);
-          let os='';
-          if(tm){
-            const bi=BULAN.findIndex(bx=>bx.toLowerCase()===tm[2].toLowerCase());
-            const dt=new Date(parseInt(tm[3]),bi>=0?bi:0,parseInt(tm[1]));
-            os=`${HARI[dt.getDay()]} ${String(parseInt(tm[1])).padStart(2,'0')}/${String((bi>=0?bi:0)+1).padStart(2,'0')}`;
-          }
-          if(!curDay||curDay.n!==formatted){
-            curDay={n:formatted,od,os,items:[]};
-            newDays.push(curDay);
-          }
-          return;
+      // Deteksi baris tanggal hari
+      if(DAY.test(a)&&!b){
+        const formatted=fmtTgl(a);
+        const od=orderDay(a);
+        const tm=a.match(/(\d{1,2})\s+(\w+)\s+(\d{4})/);
+        let os='';
+        if(tm){
+          const bi=BULAN.findIndex(bx=>bx.toLowerCase()===tm[2].toLowerCase());
+          const dt=new Date(parseInt(tm[3]),bi>=0?bi:0,parseInt(tm[1]));
+          os=`${HARI[dt.getDay()]} ${String(parseInt(tm[1])).padStart(2,'0')}/${String((bi>=0?bi:0)+1).padStart(2,'0')}`;
         }
+        if(!curDay||curDay.n!==formatted){
+          curDay={n:formatted,od,os,items:[]};newDays.push(curDay);
+        }
+        return;
       }
 
-      // Skip baris header / total / pagu
-      if(SKIP.test(a)||SKIP.test(b))return;
-      if(!curDay)return;
+      // Skip baris header / total / kosong
+      if(SKIP.test(a)||SKIP.test(b)||!curDay||!b)return;
+      if(typeof c==='string'&&c.startsWith('='))return;
 
-      // Nama bahan di kolom B
-      if(!b)return;
-      if(typeof row[2]==='string'&&row[2].startsWith('='))return;
-
+      // Nama bahan
       let nb=toTitle(b.trim());
       if(nb.toLowerCase()==='nasi'||nb.toLowerCase().startsWith('nasi '))nb='Beras';
 
-      // Deteksi kolom qty, satuan, harga
-      // Format Excel kamu: B=bahan, C=qty, D=satuan, E="Rp"(teks), F=harga angka
-      // Format lama:        B=bahan, C=qty, D=satuan, E=harga angka
-      // Auto-detect: cek apakah E adalah teks "Rp" atau angka
-      const c=row[2]; // qty
-      const d=String(row[3]||'').trim(); // satuan
-      const e=row[4]; // bisa "Rp" atau harga
-      const f=row[5]; // bisa harga (format baru)
-
-      const eIsRp = typeof e==='string' && e.trim().toLowerCase()==='rp';
-      const eIsNum = e!==''&&e!==null&&!isNaN(parseFloat(String(e).replace(/[^0-9.]/g,'')));
-      const fIsNum = f!==''&&f!==null&&!isNaN(parseFloat(String(f).replace(/[^0-9.]/g,'')));
-
-      // Ambil harga: kalau E="Rp" dan F ada angka → pakai F, kalau E angka → pakai E
-      let hargaRaw = null;
-      if(eIsRp && fIsNum){
-        hargaRaw = f; // format baru (kolom F)
-      } else if(eIsNum){
-        hargaRaw = e; // format lama (kolom E)
-      }
-
+      // Qty & satuan
       const qty=c!==''&&c!==null?parseFloat(String(c).replace(/[^0-9.]/g,''))||null:null;
       const sat=normSat(d)||getMasterSatuan(nb)||'kg';
-      const hargaExcel=hargaRaw!==null?parseFloat(String(hargaRaw).replace(/[^0-9.]/g,''))||null:null;
+
+      // Harga — auto-detect format:
+      // Format A: E = angka (harga langsung)
+      // Format B: E = "Rp" (teks), F = angka
+      const eStr=String(e||'').trim().toLowerCase();
+      const eNum=e!==''&&e!==null&&!isNaN(parseFloat(String(e).replace(/[^0-9.]/g,'')));
+      const fNum2=row[5]!==''&&row[5]!==null&&!isNaN(parseFloat(String(row[5]||'').replace(/[^0-9.]/g,'')));
+      let hargaExcel=null;
+      if(eStr==='rp'&&fNum2){
+        hargaExcel=parseFloat(String(row[5]).replace(/[^0-9.]/g,''))||null;
+      } else if(eNum){
+        hargaExcel=parseFloat(String(e).replace(/[^0-9.]/g,''))||null;
+      }
+
       const hargaMaster=getMasterHarga(nb);
       const harga=hargaExcel||hargaMaster;
       const needsReview=!!(hargaExcel&&hargaMaster&&hargaExcel!==hargaMaster);
-            curDay.items.push({b:nb,q:qty,s:sat,h:harga,hb:needsReview?hargaMaster:null,ket:''});
+      curDay.items.push({b:nb,q:qty,s:sat,h:harga,hb:needsReview?hargaMaster:null,ket:''});
     });
     const valid=newDays.filter(d=>d.items.length>0);
     if(!valid.length){toast('⚠️ Format tidak terbaca.',4000);evt.target.value='';return;}
