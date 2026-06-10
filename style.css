@@ -689,3 +689,12 @@ input::placeholder { color:var(--text3) }
 .master-hdr span:nth-child(n+3) { text-align:right }
 .master-row input { font-size:11px; height:26px; padding:3px 6px }
 .master-row input.harga-input { text-align:right; font-variant-numeric:tabular-nums }
+
+/* ══ DASHBOARD NAV BUTTON ══ */
+.dash-nav-btn {
+  padding: 5px 12px; border-radius: var(--radius);
+  border: 1px solid var(--border2); background: var(--surface);
+  color: var(--text2); font-size: 12px; font-weight: 500;
+  cursor: pointer; font-family: inherit; transition: all .15s;
+}
+.dash-nav-btn:hover { border-color: var(--accent); color: var(--accent) }

@@ -21,6 +21,7 @@
     <div class="topbar-title">Dapur Order</div>
     <div class="topbar-right">
       <div class="topbar-date" id="dash-date"></div>
+      <button class="dash-nav-btn" onclick="showPage('master')" title="Master Dapur">📋 Master</button>
       <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Ganti tema">🌙</button>
     </div>
   </div>
@@ -147,6 +148,20 @@
       </div>
       <div id="master-section-c"><p class="empty" style="padding:1rem 0;font-size:12px">Memuat...</p></div>
     </div>
+  </div>
+</div>
+
+<!-- ══ PAGE: MASTER DAPUR ══ -->
+<div id="page-master" class="page">
+  <div class="topbar">
+    <button class="back-btn" style="background:var(--bg3);border-color:var(--border2);color:var(--text)" onclick="showPage('dashboard');renderDashboard()">‹</button>
+    <div class="topbar-title">📋 Master Dapur</div>
+    <div class="topbar-right">
+      <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
+    </div>
+  </div>
+  <div class="page-body" id="master-page-c">
+    <p class="empty">Memuat...</p>
   </div>
 </div>
 
