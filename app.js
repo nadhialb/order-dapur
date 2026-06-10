@@ -98,13 +98,19 @@ function searchMaster(query){
 
 // Ambil harga bahan di master untuk dapur ini
 function getMasterHarga(nama){
-  const col = hargaCol(curDapurId);
-  const m = MASTER.find(m => m.nama.toLowerCase().trim() === nama.toLowerCase().trim());
-  return m ? (m[col] || null) : null;
+  try{
+    if(!MASTER||!MASTER.length||!curDapurId)return null;
+    const col = hargaCol(curDapurId);
+    const m = MASTER.find(m => m.nama.toLowerCase().trim() === nama.toLowerCase().trim());
+    return m ? (m[col] || null) : null;
+  }catch(e){return null;}
 }
 function getMasterSatuan(nama){
-  const m = MASTER.find(m => m.nama.toLowerCase().trim() === nama.toLowerCase().trim());
-  return m ? (m.satuan || null) : null;
+  try{
+    if(!MASTER||!MASTER.length)return null;
+    const m = MASTER.find(m => m.nama.toLowerCase().trim() === nama.toLowerCase().trim());
+    return m ? (m.satuan || null) : null;
+  }catch(e){return null;}
 }
 
 
@@ -889,7 +895,7 @@ async function handleImport(evt){
     saveLocal();renderInput();updateNavDots();
     document.getElementById('dapur-header-sub').textContent=fmtTgl(WD.days[0].n);
     toast(`✓ ${valid.length} hari diimport — klik Simpan`,3000);
-  }catch(err){console.error(err);toast('⚠️ Gagal membaca file.',3000);}
+  }catch(err){console.error('Import error:',err);toast('⚠️ Gagal: '+err.message,4000);}
   evt.target.value='';
 }
 
