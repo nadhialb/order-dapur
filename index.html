@@ -2,31 +2,26 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#0a0a0a">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Dapur Order">
-<meta name="mobile-web-app-capable" content="yes">
-<link rel="manifest" href="/manifest.json">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#0f1117">
 <title>Dapur Order</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=6">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 
+<!-- ══ LOADING BAR ══ -->
 <div id="loading-bar"></div>
 <div class="toast" id="toast"></div>
 
-<!-- PAGE: DASHBOARD -->
+<!-- ══ PAGE: DASHBOARD ══ -->
 <div id="page-dashboard" class="page active">
   <div class="topbar">
-    <div class="topbar-title">🍽️ Dapur Order</div>
+    <div class="topbar-title">Dapur Order</div>
     <div class="topbar-right">
       <div class="topbar-date" id="dash-date"></div>
-      <button class="icon-btn" id="theme-toggle" onclick="toggleTheme()" title="Ganti tema">🌙</button>
-      <button class="icon-btn" onclick="goSettings()" title="Pengaturan">⚙️</button>
+      <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Ganti tema">🌙</button>
     </div>
   </div>
   <div class="page-body">
@@ -38,39 +33,44 @@
   </div>
 </div>
 
-<!-- PAGE: DETAIL DAPUR -->
+<!-- ══ PAGE: DETAIL DAPUR ══ -->
 <div id="page-dapur" class="page">
-  <div class="dapur-sticky" id="dapur-sticky">
-    <div class="dapur-topbar" id="dapur-topbar">
-      <button class="back-btn" onclick="goBack()">‹</button>
-      <div class="dapur-topbar-text">
-        <div id="dapur-title" class="dapur-topbar-title"></div>
-        <div id="dapur-sub"   class="dapur-topbar-sub"></div>
-      </div>
-      <div class="ring-wrap">
-        <svg width="34" height="34" style="transform:rotate(-90deg)">
-          <circle cx="17" cy="17" r="13" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="2.5"/>
-          <circle id="ring-fill" cx="17" cy="17" r="13" fill="none" stroke="#4ade80"
-            stroke-width="2.5" stroke-dasharray="81.7" stroke-dashoffset="81.7"
-            stroke-linecap="round" style="transition:stroke-dashoffset .4s"/>
-        </svg>
-        <span id="ring-pct" class="ring-pct">0%</span>
-      </div>
+  <!-- Topbar dapur -->
+  <div class="dapur-topbar" id="dapur-topbar">
+    <button class="back-btn" onclick="goBack()">‹</button>
+    <div class="dapur-topbar-text">
+      <div id="dapur-title" class="dapur-topbar-title"></div>
+      <div id="dapur-sub"   class="dapur-topbar-sub"></div>
     </div>
-    <div class="tab-bar" id="tab-bar">
-      <button class="tb active" data-tab="ringkasan">◎ Ringkasan</button>
-      <button class="tb" data-tab="input">✎ Input</button>
-      <button class="tb" data-tab="pesan">✉ Pesan</button>
-      <button class="tb" data-tab="checklist">☑ Checklist</button>
-      <button class="tb" data-tab="rekap">⊞ Rekap</button>
-      <button class="tb" data-tab="stok">📦 Stok</button>
-      <button class="tb" data-tab="histori">⏱ Histori</button>
+    <div class="ring-wrap">
+      <svg width="32" height="32" style="transform:rotate(-90deg)">
+        <circle cx="16" cy="16" r="12" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="2.5"/>
+        <circle id="ring-fill" cx="16" cy="16" r="12" fill="none" stroke="#4ade80"
+          stroke-width="2.5" stroke-dasharray="75.4" stroke-dashoffset="75.4"
+          stroke-linecap="round" style="transition:stroke-dashoffset .4s"/>
+      </svg>
+      <span id="ring-pct" class="ring-pct">0%</span>
     </div>
   </div>
+
+  <!-- Tab bar — plain div, bukan sticky -->
+  <div class="tab-bar" id="tab-bar">
+    <button class="tb active" data-tab="ringkasan">◎ Ringkasan</button>
+    <button class="tb" data-tab="input">✎ Input</button>
+    <button class="tb" data-tab="pesan">✉ Pesan</button>
+    <button class="tb" data-tab="checklist">☑ Checklist</button>
+    <button class="tb" data-tab="rekap">⊞ Rekap</button>
+    <button class="tb" data-tab="stok">📦 Stok</button>
+    <button class="tb" data-tab="histori">⏱ Histori</button>
+  </div>
+
+  <!-- Tab panels -->
   <div class="tab-panels" id="tab-panels">
+
     <div class="tab-panel active" id="panel-ringkasan">
       <div id="ringkasan-c"></div>
     </div>
+
     <div class="tab-panel" id="panel-input">
       <div class="import-bar">
         <div class="import-left">
@@ -85,10 +85,12 @@
         <button class="btn-success" id="btn-sv" onclick="saveW()">◈ Simpan ke Database</button>
       </div>
     </div>
+
     <div class="tab-panel" id="panel-pesan">
       <div class="panel-head"><span class="panel-title">Pesan Order</span><span class="muted">Klik kotak untuk copy</span></div>
       <div id="order-h-c"></div>
     </div>
+
     <div class="tab-panel" id="panel-checklist">
       <div class="panel-head">
         <span class="panel-title">Checklist Order</span>
@@ -97,17 +99,14 @@
       <div class="prog-wrap"><div class="prog-bar"><div class="prog-fill" id="cl-prog" style="width:0%"></div></div></div>
       <div id="cl-c"></div>
     </div>
+
     <div class="tab-panel" id="panel-rekap">
       <div class="panel-head"><span class="panel-title">Rekap Bahan</span><span class="chip" id="rekap-c">—</span></div>
-      <div class="export-bar">
-        <button class="btn-export green" onclick="exportRekap('xlsx')">⬇ Export Excel (.xlsx)</button>
-        <button class="btn-export" onclick="exportRekap('csv')">⬇ Export CSV</button>
-      </div>
       <div style="overflow-x:auto">
         <table class="rtable" id="rtable">
           <thead><tr id="rekap-head">
-            <th style="width:32px"></th>
-            <th style="text-align:left;min-width:120px">Bahan</th>
+            <th style="width:24px"></th>
+            <th style="text-align:left;min-width:110px">Bahan</th>
             <th>Sat</th>
             <th class="th-total">Total</th>
           </tr></thead>
@@ -115,10 +114,13 @@
         </table>
       </div>
     </div>
+
+
     <div class="tab-panel" id="panel-stok">
       <div class="panel-head"><span class="panel-title">Stok Sisa</span></div>
       <div id="stok-c"></div>
     </div>
+
     <div class="tab-panel" id="panel-histori">
       <div class="panel-head">
         <span class="panel-title">Histori</span>
@@ -126,48 +128,20 @@
       </div>
       <div id="hist-c"><p class="empty">Belum ada histori.</p></div>
     </div>
-  </div>
-</div>
 
-<!-- PAGE: SETTINGS -->
+  </div><!-- tab-panels -->
+</div><!-- page-dapur -->
+
+<!-- ══ PAGE: SETTINGS ══ -->
 <div id="page-settings" class="page">
   <div class="topbar">
-    <button class="back-btn-light" onclick="goBack()">‹</button>
+    <button class="back-btn" onclick="goBack()">‹</button>
     <div class="topbar-title">Pengaturan</div>
   </div>
   <div class="page-body" id="settings-c"></div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="app.js?v=6"></script>
-<script>
-// Hapus semua service worker lama yang mungkin cache file rusak
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then(function(regs) {
-    regs.forEach(function(reg) { reg.unregister(); });
-  }).then(function() {
-    // Register ulang setelah semua lama dihapus
-    navigator.serviceWorker.register('/sw.js').catch(function(){});
-  });
-}
-// Online/Offline indicator
-function updateOnlineStatus() {
-  var existing = document.getElementById('offline-bar');
-  if (!navigator.onLine) {
-    if (!existing) {
-      var bar = document.createElement('div');
-      bar.id = 'offline-bar';
-      bar.className = 'offline-bar';
-      bar.textContent = 'Tidak ada koneksi internet — data dari cache lokal';
-      document.body.prepend(bar);
-    }
-  } else {
-    if (existing) existing.remove();
-  }
-}
-window.addEventListener('online', updateOnlineStatus);
-window.addEventListener('offline', updateOnlineStatus);
-updateOnlineStatus();
-</script>
+<script src="app.js"></script>
 </body>
 </html>
